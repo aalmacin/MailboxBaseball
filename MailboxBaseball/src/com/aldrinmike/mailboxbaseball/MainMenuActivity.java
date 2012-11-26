@@ -7,6 +7,7 @@ import org.anddev.andengine.engine.camera.Camera;
 import org.anddev.andengine.engine.options.EngineOptions;
 import org.anddev.andengine.engine.options.EngineOptions.ScreenOrientation;
 import org.anddev.andengine.engine.options.resolutionpolicy.RatioResolutionPolicy;
+import org.anddev.andengine.entity.IEntity;
 import org.anddev.andengine.entity.scene.Scene;
 import org.anddev.andengine.entity.scene.menu.MenuScene;
 import org.anddev.andengine.entity.scene.menu.MenuScene.IOnMenuItemClickListener;
@@ -23,11 +24,11 @@ import org.anddev.andengine.opengl.texture.Texture;
 import org.anddev.andengine.opengl.texture.TextureOptions;
 import org.anddev.andengine.opengl.texture.region.TextureRegion;
 import org.anddev.andengine.opengl.texture.region.TextureRegionFactory;
-import org.anddev.andengine.opengl.vertex.RectangleVertexBuffer;
 import org.anddev.andengine.ui.activity.BaseGameActivity;
 
-import android.content.Intent;
+
 import android.graphics.Color;
+import android.widget.Toast;
 
 public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemClickListener {
 
@@ -47,13 +48,18 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 	private TextureRegion mBackgroundTextureRegion;
 	private Scene mMainScene;
 	private MenuScene mStaticMenuScene;
-	private Sprite mMainBGSprite;
+	private MainBG mMainBGSprite;
 	private Sprite mHelpScreenSprite;
 	private Texture mHelpScreenTexture;
 	private TextureRegion mHelpScreenTextureRegion;
 	private Texture mBackButtonTexture;
 	private TextureRegion mBackButtonTextureRegion;
 	private Sprite mBackButtonSprite;
+	private Scene mGameScene;
+	private Scene mHelpScene;
+	private Texture mCarTexture;
+	private TextureRegion mCarTextureRegion;
+	private BackButton mCarSprite;
 	
 
 
@@ -78,7 +84,7 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 		this.mBackgroundTextureRegion = TextureRegionFactory.createFromAsset(mBackgroundTexture, this, "gfx/background.png", 0, 0);
 		this.mEngine.getTextureManager().loadTexture(this.mBackgroundTexture);	
 		
-		mMainBGSprite = new Sprite(CAMERA_WIDTH-this.mBackgroundTextureRegion.getWidth(),
+		mMainBGSprite = new MainBG(CAMERA_WIDTH-this.mBackgroundTextureRegion.getWidth(),
 				CAMERA_HEIGHT-this.mBackgroundTextureRegion.getHeight(),this.mBackgroundTextureRegion);
 		
 
@@ -93,7 +99,14 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 		this.mBackButtonTextureRegion = TextureRegionFactory.createFromAsset(mBackButtonTexture, this, "gfx/backButton.png", 0,0);
 		this.mEngine.getTextureManager().loadTexture(this.mBackButtonTexture);
 		
-		mBackButtonSprite = new BackButton(40,CAMERA_HEIGHT-100,this.mBackButtonTextureRegion);
+		mBackButtonSprite = new BackButton(40,CAMERA_HEIGHT-100,this.mBackButtonTextureRegion);		
+
+
+		this.mCarTexture = new Texture(1024,1024,TextureOptions.BILINEAR_PREMULTIPLYALPHA);
+		this.mCarTextureRegion = TextureRegionFactory.createFromAsset(mCarTexture, this, "gfx/car.png", 0,0);
+		this.mEngine.getTextureManager().loadTexture(this.mCarTexture);
+		
+		mCarSprite = new BackButton(200,CAMERA_HEIGHT-300,this.mCarTextureRegion);
 	}
 
 	private class BackButton extends Sprite
@@ -113,8 +126,7 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 			return super
 					.onAreaTouched(pSceneTouchEvent, pTouchAreaLocalX, pTouchAreaLocalY);
 		}
-	}
-	
+	}	
 	
 	@Override
 	public Scene onLoadScene() {
@@ -154,10 +166,54 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 		this.mStaticMenuScene.setOnMenuItemClickListener(this);
 	}
 
+	private void createGameScene()
+	{
+		if(mGameScene == null){
+			mGameScene = new Scene(1);
+			mGameScene.getLastChild().attachChild(mMainBGSprite);
+			mGameScene.getLastChild().attachChild(mCarSprite);
+			
+			mGameScene.registerTouchArea(mMainBGSprite);
+		}
+	}
+
+	private class MainBG extends Sprite
+	{
+
+		public MainBG(float pX, float pY, TextureRegion pTextureRegion) {
+			super(pX, pY, pTextureRegion);
+		}
+		
+		
+		@Override
+		public boolean onAreaTouched(TouchEvent pSceneTouchEvent,
+				float pTouchAreaLocalX, float pTouchAreaLocalY) {
+			if(pTouchAreaLocalX < CAMERA_WIDTH/2)
+			{
+				System.out.println("Left");
+			}
+			else
+			{
+				System.out.println("Right");
+			}
+			
+			return super
+					.onAreaTouched(pSceneTouchEvent, pTouchAreaLocalX, pTouchAreaLocalY);
+		}
+	}	
+
+	private void createHelpScreen() {
+		if(mHelpScene == null){
+			mHelpScene = new Scene(1);
+			final Text text = new Text(20, 20, mFont, "The Mailbox Baseball Game");
+			mHelpScene.getLastChild().attachChild(mHelpScreenSprite);
+			mHelpScene.getLastChild().attachChild(text);
+			mHelpScene.getLastChild().attachChild(mBackButtonSprite);
+		}
+	}
+	
 	@Override
 	public void onLoadComplete() {
-		// TODO Auto-generated method stub
-		
 	}
 	
 	@Override
@@ -165,21 +221,17 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 			float pMenuItemLocalX, float pMenuItemLocalY) {
 		switch (pMenuItem.getID()) {
 		case MENU_START:		
-//			Toast.makeText(MainMenuActivity.this,"Start Selected", Toast.LENGTH_SHORT).show();
+			Toast.makeText(MainMenuActivity.this,"Start Selected", Toast.LENGTH_SHORT).show();
+			createGameScene();
+			this.mMainScene.setChildScene(mGameScene);
 			return true;
 		case MENU_HELP:
-//			Intent myIntent = new Intent(MainMenuActivity.this,HelpActivity.class);
-//			MainMenuActivity.this.startActivity(myIntent);	
-			Scene mHelpScene = new Scene(1);
-			final Text text = new Text(20, 20, mFont, "The Mailbox Baseball Game");
-			mHelpScene.getLastChild().attachChild(mHelpScreenSprite);
-			mHelpScene.getLastChild().attachChild(text);
-			mHelpScene.getLastChild().attachChild(mBackButtonSprite);
+			createHelpScreen();
 			this.mMainScene.setChildScene(mHelpScene);
-//			Toast.makeText(MainMenuActivity.this,"Help Selected", Toast.LENGTH_SHORT).show();
+			Toast.makeText(MainMenuActivity.this,"Help Selected", Toast.LENGTH_SHORT).show();
 			return true;
 		case MENU_HIGHSCORES:
-//			Toast.makeText(MainMenuActivity.this,"High Score Selected", Toast.LENGTH_SHORT).show();
+			Toast.makeText(MainMenuActivity.this,"High Score Selected", Toast.LENGTH_SHORT).show();
 			return true;
 		case MENU_EXIT:
 			this.finish();
