@@ -75,8 +75,6 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 		this.mMainScene = new Scene(1);
 		final int centerX = (CAMERA_WIDTH-this.mBackgroundTextureRegion.getWidth());
 		final int centerY = (CAMERA_HEIGHT-this.mBackgroundTextureRegion.getHeight());
-//		final int centerX = (this.mBackgroundTextureRegion.getWidth()/2);
-//		final int centerY = (this.mBackgroundTextureRegion.getHeight()/2);
 		
 		final Sprite main = new Sprite(centerX,centerY,this.mBackgroundTextureRegion);
 		mMainScene.getLastChild().attachChild(main);
