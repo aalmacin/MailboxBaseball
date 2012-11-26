@@ -68,6 +68,7 @@ public class SplashActivity extends BaseGameActivity {
 		public void run() {
 			Intent myIntent = new Intent(SplashActivity.this,MainMenuActivity.class);
 			SplashActivity.this.startActivity(myIntent);
+			finish();
 		}
 	};
 }

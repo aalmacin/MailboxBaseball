@@ -14,6 +14,7 @@ import org.anddev.andengine.entity.scene.menu.item.IMenuItem;
 import org.anddev.andengine.entity.scene.menu.item.TextMenuItem;
 import org.anddev.andengine.entity.scene.menu.item.decorator.ColorMenuItemDecorator;
 import org.anddev.andengine.entity.sprite.Sprite;
+import org.anddev.andengine.entity.text.Text;
 import org.anddev.andengine.entity.util.FPSLogger;
 import org.anddev.andengine.opengl.font.Font;
 import org.anddev.andengine.opengl.font.FontFactory;
@@ -23,6 +24,7 @@ import org.anddev.andengine.opengl.texture.region.TextureRegion;
 import org.anddev.andengine.opengl.texture.region.TextureRegionFactory;
 import org.anddev.andengine.ui.activity.BaseGameActivity;
 
+import android.content.Intent;
 import android.graphics.Color;
 
 public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemClickListener {
@@ -43,6 +45,10 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 	private TextureRegion mBackgroundTextureRegion;
 	private Scene mMainScene;
 	private MenuScene mStaticMenuScene;
+	private Sprite mMainBGSprite;
+	private Sprite mHelpScreenSprite;
+	private Texture mHelpScreenTexture;
+	private TextureRegion mHelpScreenTextureRegion;
 	
 
 
@@ -65,7 +71,17 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 		
 		this.mBackgroundTexture = new Texture(1024,1024,TextureOptions.BILINEAR_PREMULTIPLYALPHA);
 		this.mBackgroundTextureRegion = TextureRegionFactory.createFromAsset(mBackgroundTexture, this, "gfx/background.png", 0, 0);
-		this.mEngine.getTextureManager().loadTexture(this.mBackgroundTexture);
+		this.mEngine.getTextureManager().loadTexture(this.mBackgroundTexture);		
+		mMainBGSprite = new Sprite(CAMERA_WIDTH-this.mBackgroundTextureRegion.getWidth(),
+				CAMERA_HEIGHT-this.mBackgroundTextureRegion.getHeight(),this.mBackgroundTextureRegion);
+		
+
+		this.mHelpScreenTexture = new Texture(1024,1024,TextureOptions.BILINEAR_PREMULTIPLYALPHA);
+		this.mHelpScreenTextureRegion = TextureRegionFactory.createFromAsset(mHelpScreenTexture, this, "gfx/helpScreen.png", 0, 0);
+		this.mEngine.getTextureManager().loadTexture(this.mHelpScreenTexture);
+
+		mHelpScreenSprite = new Sprite(CAMERA_WIDTH-this.mHelpScreenTextureRegion.getWidth(),
+				CAMERA_WIDTH-this.mHelpScreenTextureRegion.getWidth(),this.mHelpScreenTextureRegion);
 	}
 
 	@Override
@@ -73,12 +89,8 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 		this.mEngine.registerUpdateHandler(new FPSLogger());
 		this.createStaticMenuScene();
 		this.mMainScene = new Scene(1);
-		final int centerX = (CAMERA_WIDTH-this.mBackgroundTextureRegion.getWidth());
-		final int centerY = (CAMERA_HEIGHT-this.mBackgroundTextureRegion.getHeight());
-		
-		final Sprite main = new Sprite(centerX,centerY,this.mBackgroundTextureRegion);
-		mMainScene.getLastChild().attachChild(main);
-		mMainScene.setChildScene(mStaticMenuScene);
+		mMainScene.getLastChild().attachChild(mMainBGSprite);
+		mMainScene.setChildScene(mStaticMenuScene);		
 		return this.mMainScene;
 	}
 
@@ -119,11 +131,17 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 	public boolean onMenuItemClicked(MenuScene pMenuScene, IMenuItem pMenuItem,
 			float pMenuItemLocalX, float pMenuItemLocalY) {
 		switch (pMenuItem.getID()) {
-		case MENU_START:
-			
+		case MENU_START:		
 //			Toast.makeText(MainMenuActivity.this,"Start Selected", Toast.LENGTH_SHORT).show();
 			return true;
 		case MENU_HELP:
+//			Intent myIntent = new Intent(MainMenuActivity.this,HelpActivity.class);
+//			MainMenuActivity.this.startActivity(myIntent);	
+			Scene mHelpScene = new Scene(1);
+			final Text text = new Text(20, 20, mFont, "The Mailbox Baseball Game");
+			mHelpScene.getLastChild().attachChild(mHelpScreenSprite);
+			mHelpScene.getLastChild().attachChild(text);
+			this.mMainScene.setChildScene(mHelpScene);
 //			Toast.makeText(MainMenuActivity.this,"Help Selected", Toast.LENGTH_SHORT).show();
 			return true;
 		case MENU_HIGHSCORES:
