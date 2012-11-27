@@ -33,6 +33,9 @@ import android.widget.Toast;
 public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemClickListener {
 
 
+	private static final float CAR_LEFT_POSITION = 50;
+	private static final float CAR_RIGHT_POSITION = 200;
+
 	private final static int CAMERA_WIDTH = 480;
 	private final static int CAMERA_HEIGHT = 800;
 	
@@ -106,7 +109,7 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 		this.mCarTextureRegion = TextureRegionFactory.createFromAsset(mCarTexture, this, "gfx/car.png", 0,0);
 		this.mEngine.getTextureManager().loadTexture(this.mCarTexture);
 		
-		mCarSprite = new BackButton(200,CAMERA_HEIGHT-300,this.mCarTextureRegion);
+		mCarSprite = new BackButton(CAR_RIGHT_POSITION,CAMERA_HEIGHT-300,this.mCarTextureRegion);
 	}
 
 	private class BackButton extends Sprite
@@ -180,6 +183,7 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 	private class MainBG extends Sprite
 	{
 
+
 		public MainBG(float pX, float pY, TextureRegion pTextureRegion) {
 			super(pX, pY, pTextureRegion);
 		}
@@ -190,11 +194,11 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 				float pTouchAreaLocalX, float pTouchAreaLocalY) {
 			if(pTouchAreaLocalX < CAMERA_WIDTH/2)
 			{
-				System.out.println("Left");
+				mCarSprite.setPosition(CAR_LEFT_POSITION, mCarSprite.getY());
 			}
 			else
 			{
-				System.out.println("Right");
+				mCarSprite.setPosition(CAR_RIGHT_POSITION, mCarSprite.getY());
 			}
 			
 			return super
