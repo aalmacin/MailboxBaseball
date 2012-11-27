@@ -1,5 +1,8 @@
 package com.aldrinmike.mailboxbaseball;
 
+import java.util.Timer;
+import java.util.TimerTask;
+
 import javax.microedition.khronos.opengles.GL10;
 
 import org.anddev.andengine.engine.Engine;
@@ -7,6 +10,7 @@ import org.anddev.andengine.engine.camera.Camera;
 import org.anddev.andengine.engine.options.EngineOptions;
 import org.anddev.andengine.engine.options.EngineOptions.ScreenOrientation;
 import org.anddev.andengine.engine.options.resolutionpolicy.RatioResolutionPolicy;
+import org.anddev.andengine.entity.modifier.MoveYModifier;
 import org.anddev.andengine.entity.scene.Scene;
 import org.anddev.andengine.entity.scene.menu.MenuScene;
 import org.anddev.andengine.entity.scene.menu.MenuScene.IOnMenuItemClickListener;
@@ -76,7 +80,6 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 	private Texture mTruckTexture;
 	private TextureRegion mTruckTextureRegion;
 	private Sprite mTruckSprite;
-	
 
 
 	
@@ -148,7 +151,7 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 		this.mTruckTextureRegion = TextureRegionFactory.createFromAsset(mTruckTexture, this, "gfx/truck.png", 0,0);
 		this.mEngine.getTextureManager().loadTexture(this.mTruckTexture);
 		
-		mTruckSprite = new Sprite(-10,-10,this.mTruckTextureRegion);		
+		mTruckSprite = new Sprite(-CAMERA_WIDTH,-CAMERA_HEIGHT,this.mTruckTextureRegion);		
 		
 	}
 	
@@ -199,7 +202,28 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 			mGameScene.getLastChild().attachChild(mCarTiledSprite);
 			mGameScene.getLastChild().attachChild(mTruckSprite);
 			mGameScene.registerTouchArea(mMainBGSprite);
+			
+			Timer myTimer = new Timer();
+			myTimer.schedule(new TimerTask() {			
+				private int timeElapsed;
+				@Override
+				public void run() {
+					timeElapsed++;
+					if(timeElapsed % 5 == 0)
+					{
+						int truckPosition = (Math.random()>0.5)?CAR_LEFT_POSITION:CAR_RIGHT_POSITION;
+						mTruckSprite.setPosition(truckPosition, -CAMERA_HEIGHT);
+						dropTheTruck();
+					}
+				}
+				
+			}, (long)0, (long)1000);
 		}
+	}
+	
+	private void dropTheTruck() {
+		mTruckSprite.registerEntityModifier(new MoveYModifier(2, -30, CAMERA_HEIGHT));
+		System.out.println("Drop the truck");
 	}
 
 	private void createHelpScreen() {
