@@ -13,6 +13,7 @@ import org.anddev.andengine.entity.scene.menu.MenuScene.IOnMenuItemClickListener
 import org.anddev.andengine.entity.scene.menu.item.IMenuItem;
 import org.anddev.andengine.entity.scene.menu.item.TextMenuItem;
 import org.anddev.andengine.entity.scene.menu.item.decorator.ColorMenuItemDecorator;
+import org.anddev.andengine.entity.sprite.AnimatedSprite;
 import org.anddev.andengine.entity.sprite.Sprite;
 import org.anddev.andengine.entity.sprite.TiledSprite;
 import org.anddev.andengine.entity.text.Text;
@@ -31,14 +32,14 @@ import org.anddev.andengine.ui.activity.BaseGameActivity;
 import android.graphics.Color;
 import android.widget.Toast;
 
-public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemClickListener {
+public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemClickListener{
 
 	private final static int CAMERA_WIDTH = 480;
 	private final static int CAMERA_HEIGHT = 800;
 
 
-	private static final int CAR_LEFT_POSITION = 50;
-	private static final int CAR_RIGHT_POSITION = 200;
+	private static final int CAR_LEFT_POSITION = 100;
+	private static final int CAR_RIGHT_POSITION = 230;
 	private static final int CAR_YPOSITION = CAMERA_HEIGHT-300;
 	
 	private final static int MENU_START = 0;
@@ -69,6 +70,12 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 	private Texture mCarTiledTexture;
 	private TiledTextureRegion mCarTiledTextureRegion;
 	private TiledSprite mCarTiledSprite;
+	private Texture mGameScreenTexture;
+	private TiledTextureRegion mGameScreenTextureRegion;
+	private AnimatedSprite mRoadTiledSprite;
+	private Texture mTruckTexture;
+	private TextureRegion mTruckTextureRegion;
+	private Sprite mTruckSprite;
 	
 
 
@@ -124,6 +131,25 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 		this.mEngine.getTextureManager().loadTexture(this.mCarTiledTexture);
 		
 		this.mCarTiledSprite = new TiledSprite(CAR_RIGHT_POSITION, CAR_YPOSITION, mCarTiledTextureRegion);
+		
+
+		
+		this.mGameScreenTexture = new Texture(1024, 1024, TextureOptions.BILINEAR_PREMULTIPLYALPHA);
+		this.mGameScreenTextureRegion = TextureRegionFactory.createTiledFromAsset(mGameScreenTexture, this, "gfx/gameScreen.png", 
+				0, 0, 2, 1);
+		this.mEngine.getTextureManager().loadTexture(this.mGameScreenTexture);
+		
+		this.mRoadTiledSprite = new AnimatedSprite(0, 0, mGameScreenTextureRegion);
+		mRoadTiledSprite.animate(10);
+		
+
+
+		this.mTruckTexture = new Texture(1024,1024,TextureOptions.BILINEAR_PREMULTIPLYALPHA);
+		this.mTruckTextureRegion = TextureRegionFactory.createFromAsset(mTruckTexture, this, "gfx/truck.png", 0,0);
+		this.mEngine.getTextureManager().loadTexture(this.mTruckTexture);
+		
+		mTruckSprite = new Sprite(-10,-10,this.mTruckTextureRegion);		
+		
 	}
 	
 	@Override
@@ -169,8 +195,9 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 		if(mGameScene == null){
 			mGameScene = new Scene(1);
 			mGameScene.getLastChild().attachChild(mMainBGSprite);
+			mGameScene.getLastChild().attachChild(mRoadTiledSprite);
 			mGameScene.getLastChild().attachChild(mCarTiledSprite);
-			
+			mGameScene.getLastChild().attachChild(mTruckSprite);
 			mGameScene.registerTouchArea(mMainBGSprite);
 		}
 	}
@@ -235,8 +262,6 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 
 	private class MainBG extends Sprite
 	{
-
-
 		public MainBG(float pX, float pY, TextureRegion pTextureRegion) {
 			super(pX, pY, pTextureRegion);
 		}
