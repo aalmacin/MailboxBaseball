@@ -7,6 +7,7 @@ import javax.microedition.khronos.opengles.GL10;
 
 import org.anddev.andengine.engine.Engine;
 import org.anddev.andengine.engine.camera.Camera;
+import org.anddev.andengine.engine.handler.IUpdateHandler;
 import org.anddev.andengine.engine.options.EngineOptions;
 import org.anddev.andengine.engine.options.EngineOptions.ScreenOrientation;
 import org.anddev.andengine.engine.options.resolutionpolicy.RatioResolutionPolicy;
@@ -80,6 +81,7 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 	private Texture mTruckTexture;
 	private TextureRegion mTruckTextureRegion;
 	private Sprite mTruckSprite;
+	private Timer truckTimer;
 
 
 	
@@ -203,8 +205,8 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 			mGameScene.getLastChild().attachChild(mTruckSprite);
 			mGameScene.registerTouchArea(mMainBGSprite);
 			
-			Timer myTimer = new Timer();
-			myTimer.schedule(new TimerTask() {			
+			truckTimer = new Timer();
+			truckTimer.schedule(new TimerTask() {			
 				private int timeElapsed;
 				@Override
 				public void run() {
@@ -219,11 +221,29 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 				
 			}, (long)0, (long)1000);
 		}
+		
+		mGameScene.registerUpdateHandler(new IUpdateHandler() {
+			
+			@Override
+			public void reset() {
+				// TODO Auto-generated method stub
+				
+			}
+			
+			@Override
+			public void onUpdate(float pSecondsElapsed) {
+				if(mTruckSprite.collidesWith(mCarTiledSprite)){
+					mRoadTiledSprite.stopAnimation();
+					truckTimer.cancel();
+					mTruckSprite.clearEntityModifiers();
+					mTruckSprite.setPosition(mCarTiledSprite.getX(), CAR_YPOSITION-mTruckSprite.getHeight());
+				}
+			}
+		});
 	}
 	
 	private void dropTheTruck() {
 		mTruckSprite.registerEntityModifier(new MoveYModifier(2, -30, CAMERA_HEIGHT));
-		System.out.println("Drop the truck");
 	}
 
 	private void createHelpScreen() {
