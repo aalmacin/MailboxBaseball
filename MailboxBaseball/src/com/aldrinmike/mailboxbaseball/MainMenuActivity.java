@@ -7,7 +7,6 @@ import org.anddev.andengine.engine.camera.Camera;
 import org.anddev.andengine.engine.options.EngineOptions;
 import org.anddev.andengine.engine.options.EngineOptions.ScreenOrientation;
 import org.anddev.andengine.engine.options.resolutionpolicy.RatioResolutionPolicy;
-import org.anddev.andengine.entity.IEntity;
 import org.anddev.andengine.entity.scene.Scene;
 import org.anddev.andengine.entity.scene.menu.MenuScene;
 import org.anddev.andengine.entity.scene.menu.MenuScene.IOnMenuItemClickListener;
@@ -15,6 +14,7 @@ import org.anddev.andengine.entity.scene.menu.item.IMenuItem;
 import org.anddev.andengine.entity.scene.menu.item.TextMenuItem;
 import org.anddev.andengine.entity.scene.menu.item.decorator.ColorMenuItemDecorator;
 import org.anddev.andengine.entity.sprite.Sprite;
+import org.anddev.andengine.entity.sprite.TiledSprite;
 import org.anddev.andengine.entity.text.Text;
 import org.anddev.andengine.entity.util.FPSLogger;
 import org.anddev.andengine.input.touch.TouchEvent;
@@ -24,6 +24,7 @@ import org.anddev.andengine.opengl.texture.Texture;
 import org.anddev.andengine.opengl.texture.TextureOptions;
 import org.anddev.andengine.opengl.texture.region.TextureRegion;
 import org.anddev.andengine.opengl.texture.region.TextureRegionFactory;
+import org.anddev.andengine.opengl.texture.region.TiledTextureRegion;
 import org.anddev.andengine.ui.activity.BaseGameActivity;
 
 
@@ -32,12 +33,13 @@ import android.widget.Toast;
 
 public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemClickListener {
 
-
-	private static final float CAR_LEFT_POSITION = 50;
-	private static final float CAR_RIGHT_POSITION = 200;
-
 	private final static int CAMERA_WIDTH = 480;
 	private final static int CAMERA_HEIGHT = 800;
+
+
+	private static final int CAR_LEFT_POSITION = 50;
+	private static final int CAR_RIGHT_POSITION = 200;
+	private static final int CAR_YPOSITION = CAMERA_HEIGHT-300;
 	
 	private final static int MENU_START = 0;
 	private final static int MENU_HELP = 1;
@@ -60,9 +62,13 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 	private Sprite mBackButtonSprite;
 	private Scene mGameScene;
 	private Scene mHelpScene;
-	private Texture mCarTexture;
-	private TextureRegion mCarTextureRegion;
-	private BackButton mCarSprite;
+//	private Texture mCarTexture;
+//	private TextureRegion mCarTextureRegion;
+//	private Sprite mCarSprite;
+	public boolean carInRight;
+	private Texture mCarTiledTexture;
+	private TiledTextureRegion mCarTiledTextureRegion;
+	private TiledSprite mCarTiledSprite;
 	
 
 
@@ -70,6 +76,7 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 	@Override
 	public Engine onLoadEngine() {
 		this.mCamera = new Camera(0, 0, CAMERA_WIDTH, CAMERA_HEIGHT);
+		carInRight = true;
 		return new Engine(new EngineOptions(true, ScreenOrientation.PORTRAIT, 
 				new RatioResolutionPolicy(CAMERA_WIDTH,CAMERA_HEIGHT), this.mCamera));
 	}
@@ -105,31 +112,19 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 		mBackButtonSprite = new BackButton(40,CAMERA_HEIGHT-100,this.mBackButtonTextureRegion);		
 
 
-		this.mCarTexture = new Texture(1024,1024,TextureOptions.BILINEAR_PREMULTIPLYALPHA);
-		this.mCarTextureRegion = TextureRegionFactory.createFromAsset(mCarTexture, this, "gfx/car.png", 0,0);
-		this.mEngine.getTextureManager().loadTexture(this.mCarTexture);
+//		this.mCarTexture = new Texture(1024,1024,TextureOptions.BILINEAR_PREMULTIPLYALPHA);
+//		this.mCarTextureRegion = TextureRegionFactory.createFromAsset(mCarTexture, this, "gfx/car.png", 0,0);
+//		this.mEngine.getTextureManager().loadTexture(this.mCarTexture);
+//		
+//		mCarSprite = new Sprite(CAR_RIGHT_POSITION,CAR_YPOSITION,this.mCarTextureRegion);
 		
-		mCarSprite = new BackButton(CAR_RIGHT_POSITION,CAMERA_HEIGHT-300,this.mCarTextureRegion);
+		this.mCarTiledTexture = new Texture(1024, 1024, TextureOptions.BILINEAR_PREMULTIPLYALPHA);
+		this.mCarTiledTextureRegion = TextureRegionFactory.createTiledFromAsset(mCarTiledTexture, this, "gfx/carTile.png", 
+				0, 0, 3, 1);
+		this.mEngine.getTextureManager().loadTexture(this.mCarTiledTexture);
+		
+		this.mCarTiledSprite = new TiledSprite(CAR_RIGHT_POSITION, CAR_YPOSITION, mCarTiledTextureRegion);
 	}
-
-	private class BackButton extends Sprite
-	{
-
-		public BackButton(float pX, float pY, TextureRegion pTextureRegion) {
-			super(pX, pY, pTextureRegion);
-		}
-		
-		
-		@Override
-		public boolean onAreaTouched(TouchEvent pSceneTouchEvent,
-				float pTouchAreaLocalX, float pTouchAreaLocalY) {
-				mMainScene.getLastChild().attachChild(mMainBGSprite);
-				mMainScene.setChildScene(mStaticMenuScene);
-			
-			return super
-					.onAreaTouched(pSceneTouchEvent, pTouchAreaLocalX, pTouchAreaLocalY);
-		}
-	}	
 	
 	@Override
 	public Scene onLoadScene() {
@@ -174,37 +169,11 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 		if(mGameScene == null){
 			mGameScene = new Scene(1);
 			mGameScene.getLastChild().attachChild(mMainBGSprite);
-			mGameScene.getLastChild().attachChild(mCarSprite);
+			mGameScene.getLastChild().attachChild(mCarTiledSprite);
 			
 			mGameScene.registerTouchArea(mMainBGSprite);
 		}
 	}
-
-	private class MainBG extends Sprite
-	{
-
-
-		public MainBG(float pX, float pY, TextureRegion pTextureRegion) {
-			super(pX, pY, pTextureRegion);
-		}
-		
-		
-		@Override
-		public boolean onAreaTouched(TouchEvent pSceneTouchEvent,
-				float pTouchAreaLocalX, float pTouchAreaLocalY) {
-			if(pTouchAreaLocalX < CAMERA_WIDTH/2)
-			{
-				mCarSprite.setPosition(CAR_LEFT_POSITION, mCarSprite.getY());
-			}
-			else
-			{
-				mCarSprite.setPosition(CAR_RIGHT_POSITION, mCarSprite.getY());
-			}
-			
-			return super
-					.onAreaTouched(pSceneTouchEvent, pTouchAreaLocalX, pTouchAreaLocalY);
-		}
-	}	
 
 	private void createHelpScreen() {
 		if(mHelpScene == null){
@@ -244,4 +213,67 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 			return false;
 		}
 	}
+
+	private class BackButton extends Sprite
+	{
+
+		public BackButton(float pX, float pY, TextureRegion pTextureRegion) {
+			super(pX, pY, pTextureRegion);
+		}
+		
+		
+		@Override
+		public boolean onAreaTouched(TouchEvent pSceneTouchEvent,
+				float pTouchAreaLocalX, float pTouchAreaLocalY) {
+				mMainScene.getLastChild().attachChild(mMainBGSprite);
+				mMainScene.setChildScene(mStaticMenuScene);
+			
+			return super
+					.onAreaTouched(pSceneTouchEvent, pTouchAreaLocalX, pTouchAreaLocalY);
+		}
+	}	
+
+	private class MainBG extends Sprite
+	{
+
+
+		public MainBG(float pX, float pY, TextureRegion pTextureRegion) {
+			super(pX, pY, pTextureRegion);
+		}
+		
+		
+		@Override
+		public boolean onAreaTouched(TouchEvent pSceneTouchEvent,
+				float pTouchAreaLocalX, float pTouchAreaLocalY) {
+			if(pTouchAreaLocalX < CAMERA_WIDTH/2)
+			{
+				if(carInRight)
+				{
+					mCarTiledSprite.setCurrentTileIndex(0);
+					mCarTiledSprite.setPosition(CAR_LEFT_POSITION, mCarTiledSprite.getY());
+				}
+				else
+				{
+					mCarTiledSprite.setCurrentTileIndex(1);
+				}
+				carInRight = false;
+			}
+			else
+			{
+				if(!carInRight)
+				{
+					mCarTiledSprite.setCurrentTileIndex(0);
+					mCarTiledSprite.setPosition(CAR_RIGHT_POSITION, mCarTiledSprite.getY());
+				}
+				else
+				{
+					mCarTiledSprite.setCurrentTileIndex(2);
+				}
+				carInRight = true;
+			}
+			
+			return super
+					.onAreaTouched(pSceneTouchEvent, pTouchAreaLocalX, pTouchAreaLocalY);
+		}
+	}	
 }
