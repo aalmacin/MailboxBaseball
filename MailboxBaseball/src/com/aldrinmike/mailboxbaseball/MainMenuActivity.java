@@ -11,7 +11,9 @@ import org.anddev.andengine.engine.handler.IUpdateHandler;
 import org.anddev.andengine.engine.options.EngineOptions;
 import org.anddev.andengine.engine.options.EngineOptions.ScreenOrientation;
 import org.anddev.andengine.engine.options.resolutionpolicy.RatioResolutionPolicy;
+import org.anddev.andengine.entity.modifier.MoveXModifier;
 import org.anddev.andengine.entity.modifier.MoveYModifier;
+import org.anddev.andengine.entity.modifier.RotationModifier;
 import org.anddev.andengine.entity.scene.Scene;
 import org.anddev.andengine.entity.scene.menu.MenuScene;
 import org.anddev.andengine.entity.scene.menu.MenuScene.IOnMenuItemClickListener;
@@ -265,12 +267,36 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 						mRoadTiledSprite.stopAnimation();
 						truckTimer.cancel();
 						mTruckSprite.clearEntityModifiers();
-						mTruckSprite.setPosition(0, -CAMERA_HEIGHT);
-						mTruckCrashedSprite.setPosition(truckPosition, CAR_YPOSITION-mTruckSprite.getHeight());
+						mTruckSprite.setPosition(-CAMERA_WIDTH, mTruckSprite.getY());
+						mTruckCrashedSprite.setPosition(truckPosition, mTruckSprite.getY());
 						mTruckCrashedSprite.animate(10);
 						mCarTiledSprite.setPosition(0, -mCarTiledSprite.getHeight());
 						mCarCrashedSprite.setPosition(truckPosition, CAR_YPOSITION);
 						mCarCrashedSprite.animate(10);
+						
+						float xCarOrigin = mCarCrashedSprite.getX();
+
+						float degCounter = 0;
+						float xPosCounter = 0;
+						while(mTruckCrashedSprite.collidesWith(mCarCrashedSprite))
+						{
+							if(truckPosition == CAR_LEFT_POSITION+30)
+							{
+								xPosCounter+=0.1f;
+								degCounter--;
+							}
+							else
+							{
+								xPosCounter-=0.1f;
+								degCounter++;
+							}
+							mCarCrashedSprite.setRotation(degCounter);
+							mTruckCrashedSprite.setRotation(degCounter/3);
+							mCarCrashedSprite.setPosition(mCarCrashedSprite.getX()+xPosCounter, mCarCrashedSprite.getY());
+						}
+						mTruckCrashedSprite.registerEntityModifier(new RotationModifier(3, 0, mTruckCrashedSprite.getRotation()+degCounter/3));
+						mCarCrashedSprite.registerEntityModifier(new RotationModifier(3, 0, mCarCrashedSprite.getRotation()+degCounter));
+						mCarCrashedSprite.registerEntityModifier(new MoveXModifier(3, xCarOrigin, mCarCrashedSprite.getX()+xPosCounter));
 					}
 				}
 			}
@@ -406,7 +432,7 @@ Runnable carBackToNormalRunnable = new Runnable() {
 				else
 				{
 					mCarTiledSprite.setCurrentTileIndex(2);
-					mHandler.postDelayed(carBackToNormalRunnable, 1500);
+					mHandler.postDelayed(carBackToNormalRunnable, 1000);
 				}
 				carInRight = true;
 			}
