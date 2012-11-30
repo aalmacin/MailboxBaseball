@@ -85,6 +85,10 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 	private Texture mTruckCrashedTexture;
 	private TiledTextureRegion mTruckCrashedTextureRegion;
 	private AnimatedSprite mTruckCrashedSprite;
+	private Texture mCarCrashedTexture;
+	private TiledTextureRegion mCarCrashedTextureRegion;
+	private AnimatedSprite mCarCrashedSprite;
+	private int truckPosition;
 
 
 	
@@ -163,6 +167,15 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 		
 		this.mTruckCrashedSprite = new AnimatedSprite(0, 0, mTruckCrashedTextureRegion);
 		
+
+
+		this.mCarCrashedTexture = new Texture(512,512,TextureOptions.BILINEAR_PREMULTIPLYALPHA);
+		this.mCarCrashedTextureRegion = TextureRegionFactory.createTiledFromAsset(mCarCrashedTexture, this, "gfx/carCrashed.png", 
+				0, 0, 2, 1);
+		this.mEngine.getTextureManager().loadTexture(this.mCarCrashedTexture);
+		
+		this.mCarCrashedSprite = new AnimatedSprite(0, 0, mCarCrashedTextureRegion);
+		
 		mTruckSprite = new Sprite(-CAMERA_WIDTH,-CAMERA_HEIGHT,this.mTruckTextureRegion);		
 		
 	}
@@ -214,7 +227,12 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 			mGameScene.getLastChild().attachChild(mRoadTiledSprite);
 			mGameScene.getLastChild().attachChild(mCarTiledSprite);
 			mGameScene.getLastChild().attachChild(mTruckSprite);
+			mGameScene.getLastChild().attachChild(mTruckCrashedSprite);
+			mGameScene.getLastChild().attachChild(mCarCrashedSprite);
 			mGameScene.registerTouchArea(mMainBGSprite);
+			
+			mTruckCrashedSprite.setPosition(0, -mTruckCrashedSprite.getHeight());
+			mCarCrashedSprite.setPosition(0, -mCarCrashedSprite.getHeight());
 			
 			truckTimer = new Timer();
 			truckTimer.schedule(new TimerTask() {			
@@ -224,7 +242,7 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 					timeElapsed++;
 					if(timeElapsed % 5 == 0)
 					{
-						int truckPosition = (Math.random()>0.5)?CAR_LEFT_POSITION:CAR_RIGHT_POSITION;
+						truckPosition = (Math.random()>0.5)?CAR_LEFT_POSITION+30:CAR_RIGHT_POSITION+30;
 						mTruckSprite.setPosition(truckPosition, -CAMERA_HEIGHT);
 						dropTheTruck();
 					}
@@ -247,14 +265,19 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 					mRoadTiledSprite.stopAnimation();
 					truckTimer.cancel();
 					mTruckSprite.clearEntityModifiers();
-					mTruckSprite.setPosition(mCarTiledSprite.getX(), CAR_YPOSITION-mTruckSprite.getHeight());
+					mTruckSprite.setPosition(0, -CAMERA_HEIGHT);
+					mTruckCrashedSprite.setPosition(truckPosition, CAR_YPOSITION-mTruckSprite.getHeight());
+					mTruckCrashedSprite.animate(10);
+					mCarTiledSprite.setPosition(0, -mCarTiledSprite.getHeight());
+					mCarCrashedSprite.setPosition(truckPosition, CAR_YPOSITION);
+					mCarCrashedSprite.animate(10);
 				}
 			}
 		});
 	}
 	
 	private void dropTheTruck() {
-		mTruckSprite.registerEntityModifier(new MoveYModifier(2, -30, CAMERA_HEIGHT));
+		mTruckSprite.registerEntityModifier(new MoveYModifier(5, -mTruckSprite.getHeight(), CAMERA_HEIGHT));
 	}
 
 	private void createHelpScreen() {
