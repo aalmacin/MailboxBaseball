@@ -35,6 +35,7 @@ import org.anddev.andengine.ui.activity.BaseGameActivity;
 
 
 import android.graphics.Color;
+import android.os.Handler;
 import android.widget.Toast;
 
 public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemClickListener{
@@ -43,7 +44,7 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 	private final static int CAMERA_HEIGHT = 800;
 
 
-	private static final int CAR_LEFT_POSITION = 70;
+	private static final int CAR_LEFT_POSITION = 50;
 	private static final int CAR_RIGHT_POSITION = 200;
 	private static final int CAR_YPOSITION = CAMERA_HEIGHT-300;
 	
@@ -254,23 +255,23 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 		mGameScene.registerUpdateHandler(new IUpdateHandler() {
 			
 			@Override
-			public void reset() {
-				// TODO Auto-generated method stub
-				
-			}
+			public void reset() {}
 			
 			@Override
 			public void onUpdate(float pSecondsElapsed) {
 				if(mTruckSprite.collidesWith(mCarTiledSprite)){
-					mRoadTiledSprite.stopAnimation();
-					truckTimer.cancel();
-					mTruckSprite.clearEntityModifiers();
-					mTruckSprite.setPosition(0, -CAMERA_HEIGHT);
-					mTruckCrashedSprite.setPosition(truckPosition, CAR_YPOSITION-mTruckSprite.getHeight());
-					mTruckCrashedSprite.animate(10);
-					mCarTiledSprite.setPosition(0, -mCarTiledSprite.getHeight());
-					mCarCrashedSprite.setPosition(truckPosition, CAR_YPOSITION);
-					mCarCrashedSprite.animate(10);
+					if(mCarTiledSprite.getX() == truckPosition - 30)
+					{
+						mRoadTiledSprite.stopAnimation();
+						truckTimer.cancel();
+						mTruckSprite.clearEntityModifiers();
+						mTruckSprite.setPosition(0, -CAMERA_HEIGHT);
+						mTruckCrashedSprite.setPosition(truckPosition, CAR_YPOSITION-mTruckSprite.getHeight());
+						mTruckCrashedSprite.animate(10);
+						mCarTiledSprite.setPosition(0, -mCarTiledSprite.getHeight());
+						mCarCrashedSprite.setPosition(truckPosition, CAR_YPOSITION);
+						mCarCrashedSprite.animate(10);
+					}
 				}
 			}
 		});
@@ -297,17 +298,14 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 			float pMenuItemLocalX, float pMenuItemLocalY) {
 		switch (pMenuItem.getID()) {
 		case MENU_START:		
-			Toast.makeText(MainMenuActivity.this,"Start Selected", Toast.LENGTH_SHORT).show();
 			createGameScene();
 			this.mMainScene.setChildScene(mGameScene);
 			return true;
 		case MENU_HELP:
 			createHelpScreen();
 			this.mMainScene.setChildScene(mHelpScene);
-			Toast.makeText(MainMenuActivity.this,"Help Selected", Toast.LENGTH_SHORT).show();
 			return true;
 		case MENU_HIGHSCORES:
-			Toast.makeText(MainMenuActivity.this,"High Score Selected", Toast.LENGTH_SHORT).show();
 			return true;
 		case MENU_EXIT:
 			this.finish();
@@ -338,14 +336,51 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 
 	private class MainBG extends Sprite
 	{
+		private Handler mHandler;
+
+
 		public MainBG(float pX, float pY, TextureRegion pTextureRegion) {
 			super(pX, pY, pTextureRegion);
+			mHandler = new Handler();
 		}
 		
 		
 		@Override
 		public boolean onAreaTouched(TouchEvent pSceneTouchEvent,
 				float pTouchAreaLocalX, float pTouchAreaLocalY) {
+//			if(pTouchAreaLocalX < CAMERA_WIDTH/2)
+//			{
+//				if(carInRight)
+//				{
+//					mCarTiledSprite.setCurrentTileIndex(0);
+//					mCarTiledSprite.setPosition(CAR_LEFT_POSITION, mCarTiledSprite.getY());
+//				}
+//				else
+//				{
+//					mCarTiledSprite.setCurrentTileIndex(1);
+//				}
+//				carInRight = false;
+//			}
+//			else
+//			{
+//				if(!carInRight)
+//				{
+//					mCarTiledSprite.setCurrentTileIndex(0);
+//					mCarTiledSprite.setPosition(CAR_RIGHT_POSITION, mCarTiledSprite.getY());
+//				}
+//				else
+//				{
+//					mCarTiledSprite.setCurrentTileIndex(2);
+//				}
+//				carInRight = true;
+//			}
+Runnable carBackToNormalRunnable = new Runnable() {
+				
+				@Override
+				public void run() {
+					mCarTiledSprite.setCurrentTileIndex(0);
+				}
+			};
 			if(pTouchAreaLocalX < CAMERA_WIDTH/2)
 			{
 				if(carInRight)
@@ -356,6 +391,8 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 				else
 				{
 					mCarTiledSprite.setCurrentTileIndex(1);
+					mHandler.postDelayed(carBackToNormalRunnable, 3000);
+					
 				}
 				carInRight = false;
 			}
@@ -369,10 +406,10 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 				else
 				{
 					mCarTiledSprite.setCurrentTileIndex(2);
+					mHandler.postDelayed(carBackToNormalRunnable, 1500);
 				}
 				carInRight = true;
 			}
-			
 			return super
 					.onAreaTouched(pSceneTouchEvent, pTouchAreaLocalX, pTouchAreaLocalY);
 		}
