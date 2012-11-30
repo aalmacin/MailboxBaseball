@@ -43,8 +43,8 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 	private final static int CAMERA_HEIGHT = 800;
 
 
-	private static final int CAR_LEFT_POSITION = 100;
-	private static final int CAR_RIGHT_POSITION = 230;
+	private static final int CAR_LEFT_POSITION = 70;
+	private static final int CAR_RIGHT_POSITION = 200;
 	private static final int CAR_YPOSITION = CAMERA_HEIGHT-300;
 	
 	private final static int MENU_START = 0;
@@ -82,6 +82,9 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 	private TextureRegion mTruckTextureRegion;
 	private Sprite mTruckSprite;
 	private Timer truckTimer;
+	private Texture mTruckCrashedTexture;
+	private TiledTextureRegion mTruckCrashedTextureRegion;
+	private AnimatedSprite mTruckCrashedSprite;
 
 
 	
@@ -97,7 +100,7 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 	public void onLoadResources() {
 		mFontTexture = new Texture(256, 256,TextureOptions.BILINEAR_PREMULTIPLYALPHA);
 		FontFactory.setAssetBasePath("font/");
-		this.mFont = FontFactory.createFromAsset(this.mFontTexture, this, "kulminoituva.ttf", 32, true, Color.BLUE);
+		this.mFont = FontFactory.createFromAsset(this.mFontTexture, this, "kulminoituva.ttf", 48, true, Color.BLUE);
 		this.mEngine.getTextureManager().loadTexture(this.mFontTexture);
 		this.mEngine.getFontManager().loadFont(this.mFont);
 		
@@ -139,19 +142,26 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 		
 
 		
-		this.mGameScreenTexture = new Texture(1024, 1024, TextureOptions.BILINEAR_PREMULTIPLYALPHA);
+		this.mGameScreenTexture = new Texture(2048, 2048, TextureOptions.BILINEAR_PREMULTIPLYALPHA);
 		this.mGameScreenTextureRegion = TextureRegionFactory.createTiledFromAsset(mGameScreenTexture, this, "gfx/gameScreen.png", 
-				0, 0, 2, 1);
+				0, 0, 3, 1);
 		this.mEngine.getTextureManager().loadTexture(this.mGameScreenTexture);
 		
 		this.mRoadTiledSprite = new AnimatedSprite(0, 0, mGameScreenTextureRegion);
-		mRoadTiledSprite.animate(10);
+		mRoadTiledSprite.animate(5);
 		
 
 
 		this.mTruckTexture = new Texture(1024,1024,TextureOptions.BILINEAR_PREMULTIPLYALPHA);
 		this.mTruckTextureRegion = TextureRegionFactory.createFromAsset(mTruckTexture, this, "gfx/truck.png", 0,0);
 		this.mEngine.getTextureManager().loadTexture(this.mTruckTexture);
+
+		this.mTruckCrashedTexture = new Texture(1024,1024,TextureOptions.BILINEAR_PREMULTIPLYALPHA);
+		this.mTruckCrashedTextureRegion = TextureRegionFactory.createTiledFromAsset(mTruckCrashedTexture, this, "gfx/truckCrashed.png", 
+				0, 0, 2, 1);
+		this.mEngine.getTextureManager().loadTexture(this.mTruckCrashedTexture);
+		
+		this.mTruckCrashedSprite = new AnimatedSprite(0, 0, mTruckCrashedTextureRegion);
 		
 		mTruckSprite = new Sprite(-CAMERA_WIDTH,-CAMERA_HEIGHT,this.mTruckTextureRegion);		
 		
@@ -193,6 +203,7 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 		this.mStaticMenuScene.buildAnimations();
 		this.mStaticMenuScene.setBackgroundEnabled(false);
 		this.mStaticMenuScene.setOnMenuItemClickListener(this);
+		this.mStaticMenuScene.setPosition(mStaticMenuScene.getInitialX(), mStaticMenuScene.getInitialY() + 70);
 	}
 
 	private void createGameScene()
@@ -249,9 +260,7 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 	private void createHelpScreen() {
 		if(mHelpScene == null){
 			mHelpScene = new Scene(1);
-			final Text text = new Text(20, 20, mFont, "The Mailbox Baseball Game");
 			mHelpScene.getLastChild().attachChild(mHelpScreenSprite);
-			mHelpScene.getLastChild().attachChild(text);
 			mHelpScene.getLastChild().attachChild(mBackButtonSprite);
 		}
 	}
