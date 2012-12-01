@@ -35,6 +35,8 @@ import org.anddev.andengine.opengl.texture.region.TiledTextureRegion;
 import org.anddev.andengine.ui.activity.BaseGameActivity;
 
 
+
+import android.content.Context;
 import android.graphics.Color;
 import android.os.Handler;
 
@@ -46,7 +48,12 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 
 	private static final int CAR_LEFT_POSITION = 50;
 	private static final int CAR_RIGHT_POSITION = 200;
+	private static final int TRUCK_LEFT_POSITION = CAR_LEFT_POSITION + 30;
+	private static final int TRUCK_RIGHT_POSITION = CAR_RIGHT_POSITION + 30;
 	private static final int CAR_YPOSITION = CAMERA_HEIGHT-300;
+	
+	private static final int MAILBOX_LEFT_POS = CAR_LEFT_POSITION - 50;
+	private static final int MAILBOX_RIGHT_POS = CAR_RIGHT_POSITION + 200;
 	
 	private final static int MENU_START = 0;
 	private final static int MENU_HELP = 1;
@@ -88,6 +95,11 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 	private int mTruckPosition;
 	public boolean mCarInRight;
 	private boolean mTruckInRight;
+	public Context mContext;
+	private Texture mMailBoxTiledTexture;
+	private TiledTextureRegion mMailBoxTiledTextureRegion;
+	private MailBox mMailBoxSprite;
+	private int mScore;
 	
 	@Override
 	public Engine onLoadEngine() {
@@ -99,6 +111,7 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 
 	@Override
 	public void onLoadResources() {
+		mContext = this;
 		mFontTexture = new Texture(256, 256,TextureOptions.BILINEAR_PREMULTIPLYALPHA);
 		FontFactory.setAssetBasePath("font/");
 		this.mFont = FontFactory.createFromAsset(this.mFontTexture, this, "kulminoituva.ttf", 48, true, Color.BLUE);
@@ -133,6 +146,15 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 		this.mEngine.getTextureManager().loadTexture(this.mCarTiledTexture);
 		
 		this.mCarTiledSprite = new TiledSprite(CAR_RIGHT_POSITION, CAR_YPOSITION, mCarTiledTextureRegion);
+		
+
+		
+		this.mMailBoxTiledTexture = new Texture(1024, 1024, TextureOptions.BILINEAR_PREMULTIPLYALPHA);
+		this.mMailBoxTiledTextureRegion = TextureRegionFactory.createTiledFromAsset(mMailBoxTiledTexture, this, "gfx/mailbox.png", 
+				0, 0, 4, 1);
+		this.mEngine.getTextureManager().loadTexture(this.mMailBoxTiledTexture);
+		
+		this.mMailBoxSprite = new MailBox(mMailBoxTiledTextureRegion);
 		
 
 		
@@ -210,6 +232,7 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 
 	private void createGameScene()
 	{
+		mScore = 0;
 		if(mGameScene == null){
 			mGameScene = new Scene(1);
 			mGameScene.getLastChild().attachChild(mMainBGSprite);
@@ -218,6 +241,7 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 			mGameScene.getLastChild().attachChild(mTruckSprite);
 			mGameScene.getLastChild().attachChild(mTruckCrashedSprite);
 			mGameScene.getLastChild().attachChild(mCarCrashedSprite);
+			mGameScene.getLastChild().attachChild(mMailBoxSprite);
 			mGameScene.registerTouchArea(mMainBGSprite);
 			
 			mTruckCrashedSprite.setPosition(0, -mTruckCrashedSprite.getHeight());
@@ -231,11 +255,15 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 					timeElapsed++;
 					if(timeElapsed % 6 == 0)
 					{
-						boolean carLeft = (Math.random()>0.5f);
-						mTruckPosition = (carLeft)?CAR_LEFT_POSITION+30:CAR_RIGHT_POSITION+30;
+						boolean carLeft = (Math.random()>0.4f);
+						mTruckPosition = (carLeft)?TRUCK_LEFT_POSITION:TRUCK_RIGHT_POSITION;
 						mTruckInRight = (carLeft)?false:true;
 						mTruckSprite.setPosition(mTruckPosition, -CAMERA_HEIGHT);
 						dropTheTruck();
+					}
+					if(timeElapsed % 4 == 0)
+					{
+						mMailBoxSprite.setStatesThenDrop();
 					}
 				}
 				
@@ -268,7 +296,7 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 						float xPosCounter = 0;
 						while(mTruckCrashedSprite.collidesWith(mCarCrashedSprite))
 						{
-							if(mTruckPosition == CAR_LEFT_POSITION+30)
+							if(mTruckPosition == TRUCK_LEFT_POSITION)
 							{
 								xPosCounter+=0.1f;
 								degCounter--;
@@ -362,13 +390,6 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 		@Override
 		public boolean onAreaTouched(TouchEvent pSceneTouchEvent,
 				float pTouchAreaLocalX, float pTouchAreaLocalY) {
-			Runnable carBackToNormalRunnable = new Runnable() {
-				
-				@Override
-				public void run() {
-					mCarTiledSprite.setCurrentTileIndex(0);
-				}
-			};
 			if(pTouchAreaLocalX < CAMERA_WIDTH/2)
 			{
 				if(mCarInRight)
@@ -379,8 +400,7 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 				else
 				{
 					mCarTiledSprite.setCurrentTileIndex(1);
-					mHandler.postDelayed(carBackToNormalRunnable, 3000);
-					
+					hitBat();					
 				}
 				mCarInRight = false;
 			}
@@ -394,12 +414,70 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 				else
 				{
 					mCarTiledSprite.setCurrentTileIndex(2);
-					mHandler.postDelayed(carBackToNormalRunnable, 1000);
+					hitBat();
 				}
 				mCarInRight = true;
 			}
 			return super
 					.onAreaTouched(pSceneTouchEvent, pTouchAreaLocalX, pTouchAreaLocalY);
 		}
+
+
+		private void hitBat() {
+			Runnable carBackToNormalRunnable = new Runnable() {
+				
+				@Override
+				public void run() {
+					mCarTiledSprite.setCurrentTileIndex(0);
+				}
+			};
+			if(mCarTiledSprite.collidesWith(mMailBoxSprite))
+			{
+				if(mMailBoxSprite.isEmpty)
+					mScore++;
+				else
+					mScore--;
+			}
+			mHandler.postDelayed(carBackToNormalRunnable, 500);
+		}
 	}	
+	
+	private class MailBox extends TiledSprite
+	{		
+		private boolean isEmpty;
+
+		public MailBox(TiledTextureRegion pTiledTextureRegion) {
+			super(-pTiledTextureRegion.getWidth(), -pTiledTextureRegion.getHeight(), pTiledTextureRegion);
+		}
+		
+		public void setStatesThenDrop()
+		{
+			boolean isOnLeft = (Math.random()>0.4)?true:false;
+			setEmpty((Math.random()>0.4)?true:false);
+			this.setPosition((isOnLeft)?MAILBOX_LEFT_POS:MAILBOX_RIGHT_POS, -this.getHeight());
+			if(isOnLeft && isEmpty())
+				this.setCurrentTileIndex(1);
+			else if(isOnLeft && !isEmpty())
+				this.setCurrentTileIndex(0);
+			else if(!isOnLeft && !isEmpty())
+				this.setCurrentTileIndex(2);
+			else if(!isOnLeft && isEmpty())
+				this.setCurrentTileIndex(3);
+			
+			drop();
+		}
+		
+		private void drop() {
+			this.registerEntityModifier(new MoveYModifier(3, -mMailBoxSprite.getHeight(), CAMERA_HEIGHT));
+		}
+
+		public boolean isEmpty() {
+			return isEmpty;
+		}
+
+		public void setEmpty(boolean isEmpty) {
+			this.isEmpty = isEmpty;
+		}
+		
+	}
 }
