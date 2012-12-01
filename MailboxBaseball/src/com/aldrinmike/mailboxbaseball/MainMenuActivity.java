@@ -105,6 +105,8 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 	private int mStrikeCount;
 	private ChangeableText mScoreKeeper;
 	private ChangeableText mStrikeKeeper;
+	private Texture mScoreFontTexture;
+	private Font mScoreFont;
 	
 	@Override
 	public Engine onLoadEngine() {
@@ -122,6 +124,11 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 		this.mFont = FontFactory.createFromAsset(this.mFontTexture, this, "kulminoituva.ttf", 48, true, Color.BLUE);
 		this.mEngine.getTextureManager().loadTexture(this.mFontTexture);
 		this.mEngine.getFontManager().loadFont(this.mFont);
+
+		mScoreFontTexture = new Texture(256, 256,TextureOptions.BILINEAR_PREMULTIPLYALPHA);
+		this.mScoreFont = FontFactory.createFromAsset(this.mScoreFontTexture, this, "FLORLRG_.ttf", 20, true, Color.BLUE);
+		this.mEngine.getTextureManager().loadTexture(this.mScoreFontTexture);
+		this.mEngine.getFontManager().loadFont(this.mScoreFont);
 		
 		
 		this.mBackgroundTexture = new Texture(1024,1024,TextureOptions.BILINEAR_PREMULTIPLYALPHA);
@@ -194,8 +201,8 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 		
 		mTruckSprite = new Sprite(-CAMERA_WIDTH,-CAMERA_HEIGHT,this.mTruckTextureRegion);		
 		
-		this.mScoreKeeper = new ChangeableText(5, 5, mFont, "Score: 0");
-		this.mStrikeKeeper = new ChangeableText(mScoreKeeper.getX(), mScoreKeeper.getY()+mScoreKeeper.getHeight()+15, mFont, "Strikes: 0");
+		this.mScoreKeeper = new ChangeableText(5, 5, mScoreFont, "Score: 0");
+		this.mStrikeKeeper = new ChangeableText(mScoreKeeper.getX(), mScoreKeeper.getY()+mScoreKeeper.getHeight()+15, mScoreFont, "Strikes: 0");
 	}
 	
 	@Override
@@ -293,10 +300,10 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 						stopTheWorld();
 						mTruckSprite.setPosition(-CAMERA_WIDTH, mTruckSprite.getY());
 						mTruckCrashedSprite.setPosition(mTruckPosition, mTruckSprite.getY());
-						mTruckCrashedSprite.animate(10);
+						mTruckCrashedSprite.animate(300);
 						mCarTiledSprite.setPosition(0, -mCarTiledSprite.getHeight());
 						mCarCrashedSprite.setPosition(mTruckPosition, CAR_YPOSITION);
-						mCarCrashedSprite.animate(10);
+						mCarCrashedSprite.animate(300);
 						
 						float xCarOrigin = mCarCrashedSprite.getX();
 
