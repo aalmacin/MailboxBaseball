@@ -23,7 +23,6 @@ import org.anddev.andengine.entity.scene.menu.item.decorator.ColorMenuItemDecora
 import org.anddev.andengine.entity.sprite.AnimatedSprite;
 import org.anddev.andengine.entity.sprite.Sprite;
 import org.anddev.andengine.entity.sprite.TiledSprite;
-import org.anddev.andengine.entity.text.Text;
 import org.anddev.andengine.entity.util.FPSLogger;
 import org.anddev.andengine.input.touch.TouchEvent;
 import org.anddev.andengine.opengl.font.Font;
@@ -38,7 +37,6 @@ import org.anddev.andengine.ui.activity.BaseGameActivity;
 
 import android.graphics.Color;
 import android.os.Handler;
-import android.widget.Toast;
 
 public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemClickListener{
 
@@ -71,10 +69,6 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 	private Sprite mBackButtonSprite;
 	private Scene mGameScene;
 	private Scene mHelpScene;
-//	private Texture mCarTexture;
-//	private TextureRegion mCarTextureRegion;
-//	private Sprite mCarSprite;
-	public boolean carInRight;
 	private Texture mCarTiledTexture;
 	private TiledTextureRegion mCarTiledTextureRegion;
 	private TiledSprite mCarTiledSprite;
@@ -91,14 +85,14 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 	private Texture mCarCrashedTexture;
 	private TiledTextureRegion mCarCrashedTextureRegion;
 	private AnimatedSprite mCarCrashedSprite;
-	private int truckPosition;
-
-
+	private int mTruckPosition;
+	public boolean mCarInRight;
+	private boolean mTruckInRight;
 	
 	@Override
 	public Engine onLoadEngine() {
 		this.mCamera = new Camera(0, 0, CAMERA_WIDTH, CAMERA_HEIGHT);
-		carInRight = true;
+		mCarInRight = true;
 		return new Engine(new EngineOptions(true, ScreenOrientation.PORTRAIT, 
 				new RatioResolutionPolicy(CAMERA_WIDTH,CAMERA_HEIGHT), this.mCamera));
 	}
@@ -132,13 +126,6 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 		this.mEngine.getTextureManager().loadTexture(this.mBackButtonTexture);
 		
 		mBackButtonSprite = new BackButton(40,CAMERA_HEIGHT-100,this.mBackButtonTextureRegion);		
-
-
-//		this.mCarTexture = new Texture(1024,1024,TextureOptions.BILINEAR_PREMULTIPLYALPHA);
-//		this.mCarTextureRegion = TextureRegionFactory.createFromAsset(mCarTexture, this, "gfx/car.png", 0,0);
-//		this.mEngine.getTextureManager().loadTexture(this.mCarTexture);
-//		
-//		mCarSprite = new Sprite(CAR_RIGHT_POSITION,CAR_YPOSITION,this.mCarTextureRegion);
 		
 		this.mCarTiledTexture = new Texture(1024, 1024, TextureOptions.BILINEAR_PREMULTIPLYALPHA);
 		this.mCarTiledTextureRegion = TextureRegionFactory.createTiledFromAsset(mCarTiledTexture, this, "gfx/carTile.png", 
@@ -155,7 +142,7 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 		this.mEngine.getTextureManager().loadTexture(this.mGameScreenTexture);
 		
 		this.mRoadTiledSprite = new AnimatedSprite(0, 0, mGameScreenTextureRegion);
-		mRoadTiledSprite.animate(5);
+		mRoadTiledSprite.animate(300);
 		
 
 
@@ -168,8 +155,7 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 				0, 0, 2, 1);
 		this.mEngine.getTextureManager().loadTexture(this.mTruckCrashedTexture);
 		
-		this.mTruckCrashedSprite = new AnimatedSprite(0, 0, mTruckCrashedTextureRegion);
-		
+		this.mTruckCrashedSprite = new AnimatedSprite(0, 0, mTruckCrashedTextureRegion);		
 
 
 		this.mCarCrashedTexture = new Texture(512,512,TextureOptions.BILINEAR_PREMULTIPLYALPHA);
@@ -243,10 +229,12 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 				@Override
 				public void run() {
 					timeElapsed++;
-					if(timeElapsed % 5 == 0)
+					if(timeElapsed % 6 == 0)
 					{
-						truckPosition = (Math.random()>0.5)?CAR_LEFT_POSITION+30:CAR_RIGHT_POSITION+30;
-						mTruckSprite.setPosition(truckPosition, -CAMERA_HEIGHT);
+						boolean carLeft = (Math.random()>0.5f);
+						mTruckPosition = (carLeft)?CAR_LEFT_POSITION+30:CAR_RIGHT_POSITION+30;
+						mTruckInRight = (carLeft)?false:true;
+						mTruckSprite.setPosition(mTruckPosition, -CAMERA_HEIGHT);
 						dropTheTruck();
 					}
 				}
@@ -261,17 +249,17 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 			
 			@Override
 			public void onUpdate(float pSecondsElapsed) {
-				if(mTruckSprite.collidesWith(mCarTiledSprite)){
-					if(mCarTiledSprite.getX() == truckPosition - 30)
+				if(mTruckSprite.collidesWith(mCarTiledSprite) && mTruckSprite.getY() < CAMERA_HEIGHT-10){
+					if(mCarInRight == mTruckInRight)
 					{
 						mRoadTiledSprite.stopAnimation();
 						truckTimer.cancel();
 						mTruckSprite.clearEntityModifiers();
 						mTruckSprite.setPosition(-CAMERA_WIDTH, mTruckSprite.getY());
-						mTruckCrashedSprite.setPosition(truckPosition, mTruckSprite.getY());
+						mTruckCrashedSprite.setPosition(mTruckPosition, mTruckSprite.getY());
 						mTruckCrashedSprite.animate(10);
 						mCarTiledSprite.setPosition(0, -mCarTiledSprite.getHeight());
-						mCarCrashedSprite.setPosition(truckPosition, CAR_YPOSITION);
+						mCarCrashedSprite.setPosition(mTruckPosition, CAR_YPOSITION);
 						mCarCrashedSprite.animate(10);
 						
 						float xCarOrigin = mCarCrashedSprite.getX();
@@ -280,7 +268,7 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 						float xPosCounter = 0;
 						while(mTruckCrashedSprite.collidesWith(mCarCrashedSprite))
 						{
-							if(truckPosition == CAR_LEFT_POSITION+30)
+							if(mTruckPosition == CAR_LEFT_POSITION+30)
 							{
 								xPosCounter+=0.1f;
 								degCounter--;
@@ -374,33 +362,7 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 		@Override
 		public boolean onAreaTouched(TouchEvent pSceneTouchEvent,
 				float pTouchAreaLocalX, float pTouchAreaLocalY) {
-//			if(pTouchAreaLocalX < CAMERA_WIDTH/2)
-//			{
-//				if(carInRight)
-//				{
-//					mCarTiledSprite.setCurrentTileIndex(0);
-//					mCarTiledSprite.setPosition(CAR_LEFT_POSITION, mCarTiledSprite.getY());
-//				}
-//				else
-//				{
-//					mCarTiledSprite.setCurrentTileIndex(1);
-//				}
-//				carInRight = false;
-//			}
-//			else
-//			{
-//				if(!carInRight)
-//				{
-//					mCarTiledSprite.setCurrentTileIndex(0);
-//					mCarTiledSprite.setPosition(CAR_RIGHT_POSITION, mCarTiledSprite.getY());
-//				}
-//				else
-//				{
-//					mCarTiledSprite.setCurrentTileIndex(2);
-//				}
-//				carInRight = true;
-//			}
-Runnable carBackToNormalRunnable = new Runnable() {
+			Runnable carBackToNormalRunnable = new Runnable() {
 				
 				@Override
 				public void run() {
@@ -409,7 +371,7 @@ Runnable carBackToNormalRunnable = new Runnable() {
 			};
 			if(pTouchAreaLocalX < CAMERA_WIDTH/2)
 			{
-				if(carInRight)
+				if(mCarInRight)
 				{
 					mCarTiledSprite.setCurrentTileIndex(0);
 					mCarTiledSprite.setPosition(CAR_LEFT_POSITION, mCarTiledSprite.getY());
@@ -420,11 +382,11 @@ Runnable carBackToNormalRunnable = new Runnable() {
 					mHandler.postDelayed(carBackToNormalRunnable, 3000);
 					
 				}
-				carInRight = false;
+				mCarInRight = false;
 			}
 			else
 			{
-				if(!carInRight)
+				if(!mCarInRight)
 				{
 					mCarTiledSprite.setCurrentTileIndex(0);
 					mCarTiledSprite.setPosition(CAR_RIGHT_POSITION, mCarTiledSprite.getY());
@@ -434,7 +396,7 @@ Runnable carBackToNormalRunnable = new Runnable() {
 					mCarTiledSprite.setCurrentTileIndex(2);
 					mHandler.postDelayed(carBackToNormalRunnable, 1000);
 				}
-				carInRight = true;
+				mCarInRight = true;
 			}
 			return super
 					.onAreaTouched(pSceneTouchEvent, pTouchAreaLocalX, pTouchAreaLocalY);
