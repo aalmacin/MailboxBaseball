@@ -23,6 +23,8 @@ import org.anddev.andengine.entity.scene.menu.item.decorator.ColorMenuItemDecora
 import org.anddev.andengine.entity.sprite.AnimatedSprite;
 import org.anddev.andengine.entity.sprite.Sprite;
 import org.anddev.andengine.entity.sprite.TiledSprite;
+import org.anddev.andengine.entity.text.ChangeableText;
+import org.anddev.andengine.entity.text.Text;
 import org.anddev.andengine.entity.util.FPSLogger;
 import org.anddev.andengine.input.touch.TouchEvent;
 import org.anddev.andengine.opengl.font.Font;
@@ -52,7 +54,7 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 	private static final int TRUCK_RIGHT_POSITION = CAR_RIGHT_POSITION + 30;
 	private static final int CAR_YPOSITION = CAMERA_HEIGHT-300;
 	
-	private static final int MAILBOX_LEFT_POS = CAR_LEFT_POSITION - 50;
+	private static final int MAILBOX_LEFT_POS = CAR_LEFT_POSITION - 30;
 	private static final int MAILBOX_RIGHT_POS = CAR_RIGHT_POSITION + 200;
 	
 	private final static int MENU_START = 0;
@@ -79,8 +81,8 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 	private Texture mCarTiledTexture;
 	private TiledTextureRegion mCarTiledTextureRegion;
 	private TiledSprite mCarTiledSprite;
-	private Texture mGameScreenTexture;
-	private TiledTextureRegion mGameScreenTextureRegion;
+	private Texture mRoadTiledTexture;
+	private TiledTextureRegion mRoadTiledTextureRegion;
 	private AnimatedSprite mRoadTiledSprite;
 	private Texture mTruckTexture;
 	private TextureRegion mTruckTextureRegion;
@@ -100,6 +102,9 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 	private TiledTextureRegion mMailBoxTiledTextureRegion;
 	private MailBox mMailBoxSprite;
 	private int mScore;
+	private int mStrikeCount;
+	private ChangeableText mScoreKeeper;
+	private ChangeableText mStrikeKeeper;
 	
 	@Override
 	public Engine onLoadEngine() {
@@ -158,12 +163,12 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 		
 
 		
-		this.mGameScreenTexture = new Texture(2048, 2048, TextureOptions.BILINEAR_PREMULTIPLYALPHA);
-		this.mGameScreenTextureRegion = TextureRegionFactory.createTiledFromAsset(mGameScreenTexture, this, "gfx/gameScreen.png", 
+		this.mRoadTiledTexture = new Texture(2048, 2048, TextureOptions.BILINEAR_PREMULTIPLYALPHA);
+		this.mRoadTiledTextureRegion = TextureRegionFactory.createTiledFromAsset(mRoadTiledTexture, this, "gfx/gameScreen.png", 
 				0, 0, 3, 1);
-		this.mEngine.getTextureManager().loadTexture(this.mGameScreenTexture);
+		this.mEngine.getTextureManager().loadTexture(this.mRoadTiledTexture);
 		
-		this.mRoadTiledSprite = new AnimatedSprite(0, 0, mGameScreenTextureRegion);
+		this.mRoadTiledSprite = new AnimatedSprite(0, 0, mRoadTiledTextureRegion);
 		mRoadTiledSprite.animate(300);
 		
 
@@ -189,6 +194,8 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 		
 		mTruckSprite = new Sprite(-CAMERA_WIDTH,-CAMERA_HEIGHT,this.mTruckTextureRegion);		
 		
+		this.mScoreKeeper = new ChangeableText(5, 5, mFont, "Score: 0");
+		this.mStrikeKeeper = new ChangeableText(mScoreKeeper.getX(), mScoreKeeper.getY()+mScoreKeeper.getHeight()+15, mFont, "Strikes: 0");
 	}
 	
 	@Override
@@ -233,6 +240,7 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 	private void createGameScene()
 	{
 		mScore = 0;
+		mStrikeCount = 0;
 		if(mGameScene == null){
 			mGameScene = new Scene(1);
 			mGameScene.getLastChild().attachChild(mMainBGSprite);
@@ -242,6 +250,8 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 			mGameScene.getLastChild().attachChild(mTruckCrashedSprite);
 			mGameScene.getLastChild().attachChild(mCarCrashedSprite);
 			mGameScene.getLastChild().attachChild(mMailBoxSprite);
+			mGameScene.getLastChild().attachChild(mScoreKeeper);
+			mGameScene.getLastChild().attachChild(mStrikeKeeper);
 			mGameScene.registerTouchArea(mMainBGSprite);
 			
 			mTruckCrashedSprite.setPosition(0, -mTruckCrashedSprite.getHeight());
@@ -280,9 +290,7 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 				if(mTruckSprite.collidesWith(mCarTiledSprite) && mTruckSprite.getY() < CAMERA_HEIGHT-10){
 					if(mCarInRight == mTruckInRight)
 					{
-						mRoadTiledSprite.stopAnimation();
-						truckTimer.cancel();
-						mTruckSprite.clearEntityModifiers();
+						stopTheWorld();
 						mTruckSprite.setPosition(-CAMERA_WIDTH, mTruckSprite.getY());
 						mTruckCrashedSprite.setPosition(mTruckPosition, mTruckSprite.getY());
 						mTruckCrashedSprite.animate(10);
@@ -321,6 +329,13 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 	
 	private void dropTheTruck() {
 		mTruckSprite.registerEntityModifier(new MoveYModifier(5, -mTruckSprite.getHeight(), CAMERA_HEIGHT));
+	}
+
+	private void stopTheWorld() {
+		mRoadTiledSprite.stopAnimation();
+		truckTimer.cancel();
+		mMailBoxSprite.clearEntityModifiers();
+		mTruckSprite.clearEntityModifiers();
 	}
 
 	private void createHelpScreen() {
@@ -436,9 +451,12 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 				if(mMailBoxSprite.isEmpty)
 					mScore++;
 				else
-					mScore--;
+					mStrikeCount++;
 			}
+			mScoreKeeper.setText("Score: "+mScore);
+			mStrikeKeeper.setText("Strikes: "+mStrikeCount);
 			mHandler.postDelayed(carBackToNormalRunnable, 500);
+			System.out.println(mScore);
 		}
 	}	
 	
