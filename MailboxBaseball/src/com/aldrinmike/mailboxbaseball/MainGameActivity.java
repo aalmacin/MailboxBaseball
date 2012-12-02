@@ -79,6 +79,7 @@ public class MainGameActivity extends BaseGameActivity implements IOnMenuItemCli
 	private AlertDialog mSaveHighScoreAlertDialog;
 	private MenuScene mGameOverMenuScene;
 	private Sprite mGameOverMenuSprite;
+	private Font mFont;
 
 	@Override
 	public Engine onLoadEngine() {
@@ -95,6 +96,11 @@ public class MainGameActivity extends BaseGameActivity implements IOnMenuItemCli
 		mScoreFont = FontFactory.createFromAsset(mScoreFontTexture, this, "FLORLRG_.ttf", 20, true, Color.BLACK);
 		mEngine.getTextureManager().loadTexture(mScoreFontTexture);
 		mEngine.getFontManager().loadFont(mScoreFont);
+		
+		Texture mFontTexture = new Texture(256, 256,TextureOptions.BILINEAR_PREMULTIPLYALPHA);
+		this.mFont = FontFactory.createFromAsset(mFontTexture, this, "kulminoituva.ttf", 38, true, Color.BLACK);
+		this.mEngine.getTextureManager().loadTexture(mFontTexture);
+		this.mEngine.getFontManager().loadFont(this.mFont);
 
 		Texture mGameOverMenuTexture = new Texture(1024,1024,TextureOptions.BILINEAR_PREMULTIPLYALPHA);
 		TextureRegion mGameOverMenuTextureRegion = TextureRegionFactory.createFromAsset(mGameOverMenuTexture, this, "gfx/gameOverMenu.png", 0, 0);
@@ -372,12 +378,12 @@ public class MainGameActivity extends BaseGameActivity implements IOnMenuItemCli
 		this.mGameOverMenuScene = new MenuScene(this.mCamera);
 		mGameOverMenuScene.getLastChild().attachChild(mGameOverMenuSprite);
 		final IMenuItem playAgainMenuItem = new ColorMenuItemDecorator(
-				new TextMenuItem(MENU_PLAY_AGAIN, mScoreFont, "Play again"), 0.5f, 0.5f, 0.5f, 1.0f, 1.0f, 1.0f);
+				new TextMenuItem(MENU_PLAY_AGAIN, mFont, "Play again"), 0.5f, 0.5f, 0.5f, 1.0f, 1.0f, 1.0f);
 		playAgainMenuItem.setBlendFunction(GL10.GL_SRC_ALPHA, GL10.GL_ONE_MINUS_SRC_ALPHA);
 		this.mGameOverMenuScene.addMenuItem(playAgainMenuItem);
 	
 		final IMenuItem exitToMainMenuItem = new ColorMenuItemDecorator(
-				new TextMenuItem(MENU_EXIT_TO_MAIN_MENU, mScoreFont, "Exit"), 0.5f, 0.5f, 0.5f, 1.0f, 1.0f, 1.0f);
+				new TextMenuItem(MENU_EXIT_TO_MAIN_MENU, mFont, "Exit"), 0.5f, 0.5f, 0.5f, 1.0f, 1.0f, 1.0f);
 		exitToMainMenuItem.setBlendFunction(GL10.GL_SRC_ALPHA, GL10.GL_ONE_MINUS_SRC_ALPHA);
 		this.mGameOverMenuScene.addMenuItem(exitToMainMenuItem);	
 	

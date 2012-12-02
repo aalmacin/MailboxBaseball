@@ -1,5 +1,7 @@
 package com.aldrinmike.mailboxbaseball;
 
+import java.util.ArrayList;
+
 import javax.microedition.khronos.opengles.GL10;
 
 import org.anddev.andengine.engine.Engine;
@@ -14,6 +16,7 @@ import org.anddev.andengine.entity.scene.menu.item.IMenuItem;
 import org.anddev.andengine.entity.scene.menu.item.TextMenuItem;
 import org.anddev.andengine.entity.scene.menu.item.decorator.ColorMenuItemDecorator;
 import org.anddev.andengine.entity.sprite.Sprite;
+import org.anddev.andengine.entity.text.ChangeableText;
 import org.anddev.andengine.entity.util.FPSLogger;
 import org.anddev.andengine.input.touch.TouchEvent;
 import org.anddev.andengine.opengl.font.Font;
@@ -45,7 +48,7 @@ public class MainGameScreenActivity extends BaseGameActivity  implements IOnMenu
 	
 	private Scene mMainScene;
 	private Scene mHelpScene;
-	private Scene mHighScoreScene;
+	private HighScoreScene mHighScoreScene;
 	private MenuScene mStaticMenuScene;
 	
 	
@@ -55,6 +58,7 @@ public class MainGameScreenActivity extends BaseGameActivity  implements IOnMenu
 	private Sprite mHighScoreSceneSprite;
 	
 	public Context mContext;
+	private Font mHighScoreFont;
 	
 	@Override
 	public Engine onLoadEngine() {
@@ -72,7 +76,12 @@ public class MainGameScreenActivity extends BaseGameActivity  implements IOnMenu
 		FontFactory.setAssetBasePath("font/");
 		this.mFont = FontFactory.createFromAsset(mFontTexture, this, "kulminoituva.ttf", 48, true, Color.BLACK);
 		this.mEngine.getTextureManager().loadTexture(mFontTexture);
-		this.mEngine.getFontManager().loadFont(this.mFont);		
+		this.mEngine.getFontManager().loadFont(this.mFont);	
+		
+		Texture mScoreFontTexture = new Texture(256, 256,TextureOptions.BILINEAR_PREMULTIPLYALPHA);
+		mHighScoreFont = FontFactory.createFromAsset(mScoreFontTexture, this, "FLORLRG_.ttf", 20, true, Color.BLACK);
+		mEngine.getTextureManager().loadTexture(mScoreFontTexture);
+		mEngine.getFontManager().loadFont(mHighScoreFont);	
 		
 		Texture mBackgroundTexture = new Texture(1024,1024,TextureOptions.BILINEAR_PREMULTIPLYALPHA);
 		TextureRegion mBackgroundTextureRegion = TextureRegionFactory.createFromAsset(mBackgroundTexture, this, "gfx/background.png", 0, 0);
@@ -156,9 +165,7 @@ public class MainGameScreenActivity extends BaseGameActivity  implements IOnMenu
 	
 	private void createHighScoreScreen() {
 		if(mHighScoreScene == null){
-			mHighScoreScene = new Scene(1);
-			mHighScoreScene.getLastChild().attachChild(mHighScoreSceneSprite);
-			mHighScoreScene.getLastChild().attachChild(mBackButtonSprite);
+			mHighScoreScene = new HighScoreScene(1);
 		}
 	}
 	
@@ -180,6 +187,7 @@ public class MainGameScreenActivity extends BaseGameActivity  implements IOnMenu
 			this.mMainScene.setChildScene(mHelpScene);
 			return true;
 		case MENU_HIGHSCORES:
+			mHighScoreScene.updateTexts();
 			this.mMainScene.setChildScene(mHighScoreScene);
 			return true;
 		case MENU_EXIT:
@@ -190,6 +198,44 @@ public class MainGameScreenActivity extends BaseGameActivity  implements IOnMenu
 		}
 	}
 
+	private class HighScoreScene extends Scene
+	{
+		private Controller mController;
+		private ArrayList<ArrayList<String>> top10Players;
+		private ChangeableText mTextLeft;
+		private ChangeableText mTextRight;
+		public HighScoreScene(int pLayerCount) {
+			super(pLayerCount);
+			mTextLeft = new ChangeableText(100, 300, mHighScoreFont, "Empty text                   ");
+			mTextRight = new ChangeableText(300, 300, mHighScoreFont, "");
+			mController = new Controller(mContext);
+			this.getLastChild().attachChild(mHighScoreSceneSprite);
+			this.getLastChild().attachChild(mBackButtonSprite);
+			this.getLastChild().attachChild(mTextLeft);
+			this.getLastChild().attachChild(mTextRight);
+			updateTexts();
+		}
+
+		private void updateTexts() {
+			top10Players = mController.getTop10Scores();
+			if(top10Players == null)
+				mTextLeft.setText("No player played the game yet");
+			else
+			{
+				String players = "";
+				String scores = "";
+				for(int i = 0;i<top10Players.size();i++){
+					players += (top10Players.get(i).get(0)+"\n");
+					scores += (top10Players.get(i).get(1)+"\n");
+				}
+				mTextLeft.setText(players);
+				mTextRight.setText(scores);
+			}
+		}
+		
+		
+	}
+	
 	private class BackButton extends Sprite
 	{
 
