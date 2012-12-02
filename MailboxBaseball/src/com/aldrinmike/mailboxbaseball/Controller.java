@@ -80,7 +80,7 @@ public class Controller {
 		// Open the database and take the values and quantity into a tempCursor.
 		DBAdapter dbHelper = new DBAdapter();
 		Cursor tempCursor = dbHelper.openToRead().query(HIGH_SCORE_TABLE, new String[] { PLAYER_ID, PLAYER_NAME,PLAYER_SCORE }, 
-				null, null, null, null, PLAYER_SCORE, "10");
+				null, null, null, null, PLAYER_SCORE+" DESC", "10");
 		if (tempCursor.moveToFirst())
 			// Go through each item in the cursor and add the values into the
 			// allItems variable.

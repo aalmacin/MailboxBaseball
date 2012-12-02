@@ -206,8 +206,12 @@ public class MainGameScreenActivity extends BaseGameActivity  implements IOnMenu
 		private ChangeableText mTextRight;
 		public HighScoreScene(int pLayerCount) {
 			super(pLayerCount);
-			mTextLeft = new ChangeableText(70, 200, mHighScoreFont, "Empty text                   ");
-			mTextRight = new ChangeableText(300, 200, mHighScoreFont, "");
+			mTextLeft = new ChangeableText(70, 200, mHighScoreFont, "Empty text" +
+					"                                                             " +
+					"                                                             ");
+			mTextRight = new ChangeableText(300, 200, mHighScoreFont, 
+					"                                                             " +
+					"                                                             ");
 			mController = new Controller(mContext);
 			this.getLastChild().attachChild(mHighScoreSceneSprite);
 			this.getLastChild().attachChild(mBackButtonSprite);
@@ -222,8 +226,8 @@ public class MainGameScreenActivity extends BaseGameActivity  implements IOnMenu
 				mTextLeft.setText("No player played the game yet");
 			else
 			{
-				String players = "";
-				String scores = "";
+				String players = "Name\n";
+				String scores = "Score\n";
 				for(int i = 0;i<top10Players.size();i++){
 					players += (top10Players.get(i).get(0)+"\n");
 					scores += (top10Players.get(i).get(1)+"\n");
