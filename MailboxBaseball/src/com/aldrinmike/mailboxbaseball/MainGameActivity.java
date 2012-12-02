@@ -36,6 +36,7 @@ import org.anddev.andengine.ui.activity.BaseGameActivity;
 
 import android.app.AlertDialog;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.graphics.Color;
 import android.os.Handler;
 import android.widget.EditText;
@@ -228,7 +229,10 @@ public class MainGameActivity extends BaseGameActivity implements IOnMenuItemCli
 			resetGame();
 			return true;
 		case MENU_EXIT_TO_MAIN_MENU:
-			this.finish();
+			Intent myIntent = new Intent(MainGameActivity.this,MainGameScreenActivity.class);
+			MainGameActivity.this.startActivity(myIntent);
+			mMainScene.detachChildren();
+			finish();
 			return true;
 		default:
 			return false;
@@ -287,17 +291,10 @@ public class MainGameActivity extends BaseGameActivity implements IOnMenuItemCli
 			
 			@Override
 			public void onUpdate(float pSecondsElapsed) {
-				Runnable showHighScoreAddScreen = new Runnable() {
-
-					@Override
-					public void run() {
-						mSaveHighScoreAlertDialog.show();
-					}
-				};
 				if(mStrikeCount == 3)
 				{
 					stopTheWorld();
-					mHandler.post(showHighScoreAddScreen);
+					mSaveHighScoreAlertDialog.show();
 				}
 				if(mTruckSprite.collidesWith(mCarTiledSprite) && mTruckSprite.getY() < CAMERA_HEIGHT-10){
 					if(mCarInRight == mTruckInRight)
@@ -333,7 +330,7 @@ public class MainGameActivity extends BaseGameActivity implements IOnMenuItemCli
 						mTruckCrashedSprite.registerEntityModifier(new RotationModifier(3, 0, mTruckCrashedSprite.getRotation()+degCounter/3));
 						mCarCrashedSprite.registerEntityModifier(new RotationModifier(3, 0, mCarCrashedSprite.getRotation()+degCounter));
 						mCarCrashedSprite.registerEntityModifier(new MoveXModifier(3, xCarOrigin, mCarCrashedSprite.getX()+xPosCounter));
-						mHandler.postDelayed(showHighScoreAddScreen, 3000);
+						mSaveHighScoreAlertDialog.show();
 					}
 				}
 			}

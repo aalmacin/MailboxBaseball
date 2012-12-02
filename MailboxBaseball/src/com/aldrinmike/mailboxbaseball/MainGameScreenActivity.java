@@ -169,6 +169,7 @@ public class MainGameScreenActivity extends BaseGameActivity  implements IOnMenu
 		case MENU_START:		
 			Intent myIntent = new Intent(MainGameScreenActivity.this,MainGameActivity.class);
 			MainGameScreenActivity.this.startActivity(myIntent);
+			mMainScene.detachChildren();
 			finish();
 			return true;
 		case MENU_HELP:
