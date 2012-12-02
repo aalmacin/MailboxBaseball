@@ -115,6 +115,9 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 	private Sprite mHighScoreSceneSprite;
 	private Handler mHandler;
 	private TimerTask mTruckTimerTask;
+	private Texture mGameOverMenuTexture;
+	private TextureRegion mGameOverMenuTextureRegion;
+	private Sprite mGameOverMenuSprite;
 	
 	@Override
 	public Engine onLoadEngine() {
@@ -129,12 +132,12 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 		mContext = this;
 		mFontTexture = new Texture(256, 256,TextureOptions.BILINEAR_PREMULTIPLYALPHA);
 		FontFactory.setAssetBasePath("font/");
-		this.mFont = FontFactory.createFromAsset(this.mFontTexture, this, "kulminoituva.ttf", 48, true, Color.BLUE);
+		this.mFont = FontFactory.createFromAsset(this.mFontTexture, this, "kulminoituva.ttf", 48, true, Color.BLACK);
 		this.mEngine.getTextureManager().loadTexture(this.mFontTexture);
 		this.mEngine.getFontManager().loadFont(this.mFont);
 
 		mScoreFontTexture = new Texture(256, 256,TextureOptions.BILINEAR_PREMULTIPLYALPHA);
-		this.mScoreFont = FontFactory.createFromAsset(this.mScoreFontTexture, this, "FLORLRG_.ttf", 20, true, Color.BLUE);
+		this.mScoreFont = FontFactory.createFromAsset(this.mScoreFontTexture, this, "FLORLRG_.ttf", 20, true, Color.BLACK);
 		this.mEngine.getTextureManager().loadTexture(this.mScoreFontTexture);
 		this.mEngine.getFontManager().loadFont(this.mScoreFont);
 		
@@ -145,6 +148,13 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 		
 		mMainBGSprite = new MainBG(CAMERA_WIDTH-this.mBackgroundTextureRegion.getWidth(),
 				CAMERA_HEIGHT-this.mBackgroundTextureRegion.getHeight(),this.mBackgroundTextureRegion);
+		
+		this.mGameOverMenuTexture = new Texture(1024,1024,TextureOptions.BILINEAR_PREMULTIPLYALPHA);
+		this.mGameOverMenuTextureRegion = TextureRegionFactory.createFromAsset(mGameOverMenuTexture, this, "gfx/gameOverMenu.png", 0, 0);
+		this.mEngine.getTextureManager().loadTexture(this.mGameOverMenuTexture);	
+		
+		mGameOverMenuSprite = new Sprite(CAMERA_WIDTH-this.mGameOverMenuTextureRegion.getWidth(),
+				CAMERA_HEIGHT-this.mGameOverMenuTextureRegion.getHeight(),this.mGameOverMenuTextureRegion);
 		
 
 		this.mHelpScreenTexture = new Texture(1024,1024,TextureOptions.BILINEAR_PREMULTIPLYALPHA);
@@ -239,22 +249,22 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 	private void createStaticMenuScene() {		
 		this.mStaticMenuScene = new MenuScene(this.mCamera);
 		final IMenuItem startMenuItem = new ColorMenuItemDecorator(
-				new TextMenuItem(MENU_START, mFont, "Start"), 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f);
+				new TextMenuItem(MENU_START, mFont, "Start"), 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
 		startMenuItem.setBlendFunction(GL10.GL_SRC_ALPHA, GL10.GL_ONE_MINUS_SRC_ALPHA);
 		this.mStaticMenuScene.addMenuItem(startMenuItem);
 		
 		final IMenuItem helpMenuItem = new ColorMenuItemDecorator(
-				new TextMenuItem(MENU_HELP, mFont, "Help"), 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f);
+				new TextMenuItem(MENU_HELP, mFont, "Help"), 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
 		helpMenuItem.setBlendFunction(GL10.GL_SRC_ALPHA, GL10.GL_ONE_MINUS_SRC_ALPHA);
 		this.mStaticMenuScene.addMenuItem(helpMenuItem);
 		
 		final IMenuItem highScoreMenuItem = new ColorMenuItemDecorator(
-				new TextMenuItem(MENU_HIGHSCORES, mFont, "High Scores"), 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f);
+				new TextMenuItem(MENU_HIGHSCORES, mFont, "High Scores"), 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
 		highScoreMenuItem.setBlendFunction(GL10.GL_SRC_ALPHA, GL10.GL_ONE_MINUS_SRC_ALPHA);
 		this.mStaticMenuScene.addMenuItem(highScoreMenuItem);
 		
 		final IMenuItem exitMenuItem = new ColorMenuItemDecorator(
-				new TextMenuItem(MENU_EXIT, mFont, "Exit"), 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f);
+				new TextMenuItem(MENU_EXIT, mFont, "Exit"), 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
 		exitMenuItem.setBlendFunction(GL10.GL_SRC_ALPHA, GL10.GL_ONE_MINUS_SRC_ALPHA);
 		this.mStaticMenuScene.addMenuItem(exitMenuItem);		
 		
@@ -266,6 +276,7 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 
 	private void createGameOverMenuScene() {		
 		this.mGameOverMenuScene = new MenuScene(this.mCamera);
+		mGameOverMenuScene.getLastChild().attachChild(mGameOverMenuSprite);
 		final IMenuItem playAgainMenuItem = new ColorMenuItemDecorator(
 				new TextMenuItem(MENU_PLAY_AGAIN, mFont, "Play again"), 0.5f, 0.5f, 0.5f, 1.0f, 1.0f, 1.0f);
 		playAgainMenuItem.setBlendFunction(GL10.GL_SRC_ALPHA, GL10.GL_ONE_MINUS_SRC_ALPHA);
@@ -293,9 +304,10 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 		mTruckCrashedSprite.clearEntityModifiers();
 		mCarTiledSprite.setInitialPosition();
 		mTruckSprite.setInitialPosition();
-		mMailBoxSprite.setInitialPosition();	
-		mTruckCrashedSprite.setPosition(0,-mTruckCrashedSprite.getHeight());
-		mCarCrashedSprite.setPosition(0, -mCarCrashedSprite.getHeight());
+		
+		mMailBoxSprite.setPosition(0,-(mMailBoxSprite.getHeight()+100));	
+		mTruckCrashedSprite.setPosition(0,-(mTruckCrashedSprite.getHeight()+100));
+		mCarCrashedSprite.setPosition(0, -(mCarCrashedSprite.getHeight()+100));
 
 		mRoadTiledSprite.animate(300);
 		
@@ -598,7 +610,7 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 		}
 		
 		private void drop() {
-			this.registerEntityModifier(new MoveYModifier(3, this.getHeight(), CAMERA_HEIGHT));
+			this.registerEntityModifier(new MoveYModifier(3, -this.getHeight(), CAMERA_HEIGHT));
 		}
 
 		public boolean isEmpty() {
