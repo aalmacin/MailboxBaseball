@@ -217,8 +217,8 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 		
 		mTruckSprite = new Sprite(-CAMERA_WIDTH,-CAMERA_HEIGHT,this.mTruckTextureRegion);		
 		
-		this.mScoreKeeper = new ChangeableText(5, 5, mScoreFont, "Score: 0");
-		this.mStrikeKeeper = new ChangeableText(mScoreKeeper.getX(), mScoreKeeper.getY()+mScoreKeeper.getHeight()+15, mScoreFont, "Strikes: 0");
+		this.mScoreKeeper = new ChangeableText(5, 5, mScoreFont, "Score: 0     ");
+		this.mStrikeKeeper = new ChangeableText(mScoreKeeper.getX(), mScoreKeeper.getY()+mScoreKeeper.getHeight()+15, mScoreFont, "Strikes: 0     ");
 	}
 	
 	@Override
@@ -284,6 +284,8 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 
 
 	private void resetGame() {	
+		mScore = 0;
+		mStrikeCount = 0;
 		this.mGameOverMenuScene.setVisible(false);
 		mCarTiledSprite.clearEntityModifiers();
 		mCarCrashedSprite.clearEntityModifiers();
@@ -370,6 +372,19 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 			
 			@Override
 			public void onUpdate(float pSecondsElapsed) {
+				Runnable showGameOverScreen = new Runnable() {
+					
+					@Override
+					public void run() {
+						mGameScene.setChildScene(mGameOverMenuScene);
+						mGameOverMenuScene.setVisible(true);
+					}
+				};
+				if(mStrikeCount == 3)
+				{
+					stopTheWorld();
+					mHandler.post(showGameOverScreen);
+				}
 				if(mTruckSprite.collidesWith(mCarTiledSprite) && mTruckSprite.getY() < CAMERA_HEIGHT-10){
 					if(mCarInRight == mTruckInRight)
 					{
@@ -404,13 +419,6 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 						mTruckCrashedSprite.registerEntityModifier(new RotationModifier(3, 0, mTruckCrashedSprite.getRotation()+degCounter/3));
 						mCarCrashedSprite.registerEntityModifier(new RotationModifier(3, 0, mCarCrashedSprite.getRotation()+degCounter));
 						mCarCrashedSprite.registerEntityModifier(new MoveXModifier(3, xCarOrigin, mCarCrashedSprite.getX()+xPosCounter));
-						Runnable showGameOverScreen = new Runnable() {
-							
-							@Override
-							public void run() {
-								mGameScene.setChildScene(mGameOverMenuScene);
-							}
-						};
 						mHandler.postDelayed(showGameOverScreen, 3000);
 					}
 				}
@@ -547,12 +555,13 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 					mCarTiledSprite.setCurrentTileIndex(0);
 				}
 			};
-			if(mCarTiledSprite.collidesWith(mMailBoxSprite))
+			if(mCarTiledSprite.collidesWith(mMailBoxSprite) && !mMailBoxSprite.isHit())
 			{
 				if(mMailBoxSprite.isEmpty)
 					mScore++;
 				else
 					mStrikeCount++;
+				mMailBoxSprite.setHit(true);
 			}
 			mScoreKeeper.setText("Score: "+mScore);
 			mStrikeKeeper.setText("Strikes: "+mStrikeCount);
@@ -564,6 +573,7 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 	private class MailBox extends TiledSprite
 	{		
 		private boolean isEmpty;
+		private boolean isHit;
 
 		public MailBox(TiledTextureRegion pTiledTextureRegion) {
 			super(-pTiledTextureRegion.getWidth(), -pTiledTextureRegion.getHeight(), pTiledTextureRegion);
@@ -572,6 +582,7 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 		public void setStatesThenDrop()
 		{
 			boolean isOnLeft = (Math.random()>0.4)?true:false;
+			setHit(false);
 			setEmpty((Math.random()>0.4)?true:false);
 			this.setPosition((isOnLeft)?MAILBOX_LEFT_POS:MAILBOX_RIGHT_POS, -this.getHeight());
 			if(isOnLeft && isEmpty())
@@ -596,6 +607,14 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 
 		public void setEmpty(boolean isEmpty) {
 			this.isEmpty = isEmpty;
+		}
+
+		public boolean isHit() {
+			return isHit;
+		}
+
+		public void setHit(boolean isHit) {
+			this.isHit = isHit;
 		}
 		
 	}
