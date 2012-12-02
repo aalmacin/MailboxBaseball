@@ -40,8 +40,11 @@ import org.anddev.andengine.ui.activity.BaseGameActivity;
 import android.content.Context;
 import android.graphics.Color;
 import android.os.Handler;
+import android.text.Editable;
+import android.text.TextWatcher;
+import android.widget.EditText;
 
-public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemClickListener{
+public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemClickListener, TextWatcher{
 
 	private final static int CAMERA_WIDTH = 480;
 	private final static int CAMERA_HEIGHT = 800;
@@ -118,6 +121,8 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 	private Texture mGameOverMenuTexture;
 	private TextureRegion mGameOverMenuTextureRegion;
 	private Sprite mGameOverMenuSprite;
+	private Scene mAddHighScoreScene;
+	private EditText mHighScoreEditText;
 	
 	@Override
 	public Engine onLoadEngine() {
@@ -238,6 +243,7 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 		this.createGameScene();
 		this.createHelpScreen();
 		this.createHighScoreScreen();
+		this.createAddHighScoreScene();
 		this.createGameOverMenuScene();
 		this.mMainScene = new Scene(1);
 		mMainScene.getLastChild().attachChild(mMainBGSprite);
@@ -384,18 +390,18 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 			
 			@Override
 			public void onUpdate(float pSecondsElapsed) {
-				Runnable showGameOverScreen = new Runnable() {
+				Runnable showHighScoreAddScreen = new Runnable() {
 					
 					@Override
 					public void run() {
-						mGameScene.setChildScene(mGameOverMenuScene);
+						mGameScene.setChildScene(mAddHighScoreScene);
 						mGameOverMenuScene.setVisible(true);
 					}
 				};
 				if(mStrikeCount == 3)
 				{
 					stopTheWorld();
-					mHandler.post(showGameOverScreen);
+					mHandler.post(showHighScoreAddScreen);
 				}
 				if(mTruckSprite.collidesWith(mCarTiledSprite) && mTruckSprite.getY() < CAMERA_HEIGHT-10){
 					if(mCarInRight == mTruckInRight)
@@ -431,7 +437,7 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 						mTruckCrashedSprite.registerEntityModifier(new RotationModifier(3, 0, mTruckCrashedSprite.getRotation()+degCounter/3));
 						mCarCrashedSprite.registerEntityModifier(new RotationModifier(3, 0, mCarCrashedSprite.getRotation()+degCounter));
 						mCarCrashedSprite.registerEntityModifier(new MoveXModifier(3, xCarOrigin, mCarCrashedSprite.getX()+xPosCounter));
-						mHandler.postDelayed(showGameOverScreen, 3000);
+						mHandler.postDelayed(showHighScoreAddScreen, 3000);
 					}
 				}
 			}
@@ -457,6 +463,19 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 		}
 	}
 
+	private void createAddHighScoreScene(){
+		if(mAddHighScoreScene == null){
+			mAddHighScoreScene = new Scene(1);
+			mAddHighScoreScene.getLastChild().attachChild(mGameOverMenuSprite);
+			
+			
+			
+		}
+	}
+
+	
+	
+	
 	private void createHighScoreScreen() {
 		if(mHighScoreScene == null){
 			mHighScoreScene = new Scene(1);
@@ -628,6 +647,27 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 		public void setHit(boolean isHit) {
 			this.isHit = isHit;
 		}
+		
+	}
+
+	
+	
+	@Override
+	public void afterTextChanged(Editable s) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void beforeTextChanged(CharSequence s, int start, int count,
+			int after) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void onTextChanged(CharSequence s, int start, int before, int count) {
+		// TODO Auto-generated method stub
 		
 	}
 }
