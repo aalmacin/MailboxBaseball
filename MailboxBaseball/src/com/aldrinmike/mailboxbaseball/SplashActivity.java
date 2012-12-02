@@ -66,7 +66,7 @@ public class SplashActivity extends BaseGameActivity {
 		
 		@Override
 		public void run() {
-			Intent myIntent = new Intent(SplashActivity.this,MainMenuActivity.class);
+			Intent myIntent = new Intent(SplashActivity.this,MainGameScreenActivity.class);
 			SplashActivity.this.startActivity(myIntent);
 			finish();
 		}

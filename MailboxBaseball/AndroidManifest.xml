@@ -23,11 +23,15 @@
             </intent-filter>
         </activity>
         <activity
-            android:name="com.aldrinmike.mailboxbaseball.MainMenuActivity"
+            android:name="com.aldrinmike.mailboxbaseball.MainGameScreenActivity"
             android:label="@string/app_name" >
         </activity>
         <activity
             android:name="com.aldrinmike.mailboxbaseball.HelpActivity"
+            android:label="@string/app_name" >
+        </activity>
+        <activity
+            android:name="com.aldrinmike.mailboxbaseball.MainGameActivity"
             android:label="@string/app_name" >
         </activity>
     </application>
