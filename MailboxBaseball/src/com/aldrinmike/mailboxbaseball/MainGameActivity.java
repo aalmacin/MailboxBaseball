@@ -175,7 +175,8 @@ public class MainGameActivity extends BaseGameActivity implements IOnMenuItemCli
 	}
 
 
-	private void resetGame() {	
+	private void resetGame() {
+		mCarInRight = true;	
 		mScore = 0;
 		mStrikeCount = 0;
 		mCarTiledSprite.clearEntityModifiers();
@@ -397,6 +398,7 @@ public class MainGameActivity extends BaseGameActivity implements IOnMenuItemCli
 		// When the button is clicked, call the reset method and resume the thread.
 		public void onClick(DialogInterface dialog, int which) 
 		{
+			mPlayer = (mHighScorerName.getText().length() == 0)?"Player 1":mHighScorerName.getText().toString();
 			mController.savePlayerAndScore(mPlayer,mScore);
 			mMainScene.setChildScene(mGameOverMenuScene);
 			mGameOverMenuScene.setVisible(true);

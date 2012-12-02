@@ -128,6 +128,10 @@ public class Controller {
 	public void savePlayerAndScore(String mPlayer, int mScore) {
 		// Open the database and take the values and quantity into a tempCursor.
 				DBAdapter dbHelper = new DBAdapter();
+				if(mPlayer.length() == 0)
+				{
+					mPlayer = "Player 1";
+				}
 				ContentValues contentValues = new ContentValues();
 				contentValues.put(PLAYER_NAME, mPlayer);
 				contentValues.put(PLAYER_SCORE, mScore);
