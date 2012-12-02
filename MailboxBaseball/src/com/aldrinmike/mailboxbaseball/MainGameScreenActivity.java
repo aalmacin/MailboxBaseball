@@ -206,8 +206,8 @@ public class MainGameScreenActivity extends BaseGameActivity  implements IOnMenu
 		private ChangeableText mTextRight;
 		public HighScoreScene(int pLayerCount) {
 			super(pLayerCount);
-			mTextLeft = new ChangeableText(100, 300, mHighScoreFont, "Empty text                   ");
-			mTextRight = new ChangeableText(300, 300, mHighScoreFont, "");
+			mTextLeft = new ChangeableText(70, 200, mHighScoreFont, "Empty text                   ");
+			mTextRight = new ChangeableText(300, 200, mHighScoreFont, "");
 			mController = new Controller(mContext);
 			this.getLastChild().attachChild(mHighScoreSceneSprite);
 			this.getLastChild().attachChild(mBackButtonSprite);
