@@ -34,8 +34,11 @@ import org.anddev.andengine.opengl.texture.region.TextureRegionFactory;
 import org.anddev.andengine.opengl.texture.region.TiledTextureRegion;
 import org.anddev.andengine.ui.activity.BaseGameActivity;
 
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.graphics.Color;
 import android.os.Handler;
+import android.widget.EditText;
 
 public class MainGameActivity extends BaseGameActivity implements IOnMenuItemClickListener{
 
@@ -49,7 +52,6 @@ public class MainGameActivity extends BaseGameActivity implements IOnMenuItemCli
 	private static final int CAR_YPOSITION = CAMERA_HEIGHT-300;	
 	private static final int MAILBOX_LEFT_POS = CAR_LEFT_POSITION - 30;
 	private static final int MAILBOX_RIGHT_POS = CAR_RIGHT_POSITION + 200;
-	
 	private static final int MENU_PLAY_AGAIN = 4;
 	private static final int MENU_EXIT_TO_MAIN_MENU = 5;
 	private Camera mCamera;
@@ -62,9 +64,7 @@ public class MainGameActivity extends BaseGameActivity implements IOnMenuItemCli
 	private Scene mGameScene;
 	private int mScore;
 	private int mStrikeCount;
-	private MenuScene mGameOverMenuScene;
 	private Font mScoreFont;
-	private Sprite mGameOverMenuSprite;
 	private TiledSprite mCarTiledSprite;
 	private MailBox mMailBoxSprite;
 	private Road mRoadTiledSprite;
@@ -74,6 +74,10 @@ public class MainGameActivity extends BaseGameActivity implements IOnMenuItemCli
 	private boolean mCarInRight;
 	private TimerTask mTruckTimerTask;	
 	private Handler mHandler;
+	private EditText mHighScorerName;
+	private AlertDialog mSaveHighScoreAlertDialog;
+	private MenuScene mGameOverMenuScene;
+	private Sprite mGameOverMenuSprite;
 
 	@Override
 	public Engine onLoadEngine() {
@@ -90,11 +94,11 @@ public class MainGameActivity extends BaseGameActivity implements IOnMenuItemCli
 		mScoreFont = FontFactory.createFromAsset(mScoreFontTexture, this, "FLORLRG_.ttf", 20, true, Color.BLACK);
 		mEngine.getTextureManager().loadTexture(mScoreFontTexture);
 		mEngine.getFontManager().loadFont(mScoreFont);
-		
+
 		Texture mGameOverMenuTexture = new Texture(1024,1024,TextureOptions.BILINEAR_PREMULTIPLYALPHA);
 		TextureRegion mGameOverMenuTextureRegion = TextureRegionFactory.createFromAsset(mGameOverMenuTexture, this, "gfx/gameOverMenu.png", 0, 0);
 		mEngine.getTextureManager().loadTexture(mGameOverMenuTexture);	
-		
+
 		mGameOverMenuSprite = new Sprite(CAMERA_WIDTH-mGameOverMenuTextureRegion.getWidth(),
 				CAMERA_HEIGHT-mGameOverMenuTextureRegion.getHeight(),mGameOverMenuTextureRegion);
 		
@@ -149,7 +153,6 @@ public class MainGameActivity extends BaseGameActivity implements IOnMenuItemCli
 	@Override
 	public Scene onLoadScene() {
 		this.createGameScene();
-		this.createGameOverMenuScene();
 		this.mMainScene = new Scene(1);
 		mMainScene.getLastChild().attachChild(mRoadTiledSprite);
 		mMainScene.setChildScene(mGameScene);	
@@ -159,15 +162,12 @@ public class MainGameActivity extends BaseGameActivity implements IOnMenuItemCli
 
 	@Override
 	public void onLoadComplete() {
-		// TODO Auto-generated method stub
-
 	}
 
 
 	private void resetGame() {	
 		mScore = 0;
 		mStrikeCount = 0;
-		this.mGameOverMenuScene.setVisible(false);
 		mCarTiledSprite.clearEntityModifiers();
 		mCarCrashedSprite.clearEntityModifiers();
 		mTruckSprite.clearEntityModifiers();
@@ -223,6 +223,8 @@ public class MainGameActivity extends BaseGameActivity implements IOnMenuItemCli
 			float pMenuItemLocalX, float pMenuItemLocalY) {
 		switch (pMenuItem.getID()) {
 		case MENU_PLAY_AGAIN:
+			mGameOverMenuScene.setVisible(false);
+			mMainScene.setChildScene(mGameScene);
 			resetGame();
 			return true;
 		case MENU_EXIT_TO_MAIN_MENU:
@@ -232,31 +234,15 @@ public class MainGameActivity extends BaseGameActivity implements IOnMenuItemCli
 			return false;
 		}
 	}
-
-	private void createGameOverMenuScene() {
-		this.mGameOverMenuScene = new MenuScene(this.mCamera);
-		mGameOverMenuScene.getLastChild().attachChild(mGameOverMenuSprite);
-		final IMenuItem playAgainMenuItem = new ColorMenuItemDecorator(
-				new TextMenuItem(MENU_PLAY_AGAIN, mScoreFont, "Play again"), 0.5f, 0.5f, 0.5f, 1.0f, 1.0f, 1.0f);
-		playAgainMenuItem.setBlendFunction(GL10.GL_SRC_ALPHA, GL10.GL_ONE_MINUS_SRC_ALPHA);
-		this.mGameOverMenuScene.addMenuItem(playAgainMenuItem);
-		
-		final IMenuItem exitToMainMenuItem = new ColorMenuItemDecorator(
-				new TextMenuItem(MENU_EXIT_TO_MAIN_MENU, mScoreFont, "Exit"), 0.5f, 0.5f, 0.5f, 1.0f, 1.0f, 1.0f);
-		exitToMainMenuItem.setBlendFunction(GL10.GL_SRC_ALPHA, GL10.GL_ONE_MINUS_SRC_ALPHA);
-		this.mGameOverMenuScene.addMenuItem(exitToMainMenuItem);	
-		
-		this.mGameOverMenuScene.buildAnimations();
-		this.mGameOverMenuScene.setBackgroundEnabled(false);
-		this.mGameOverMenuScene.setOnMenuItemClickListener(this);
-		this.mGameOverMenuScene.setPosition(mGameOverMenuScene.getInitialX(), mGameOverMenuScene.getInitialY() + 70);
-	}
 	
 	private void createGameScene()
 	{
 		mCarInRight = true;
 		mScore = 0;
 		mStrikeCount = 0;
+		mHighScorerName = new EditText(this);
+		createAlertDialogs();
+		createGameOverMenuScene();
 		
 		if(mGameScene == null){
 			mGameScene = new Scene(1);
@@ -305,8 +291,7 @@ public class MainGameActivity extends BaseGameActivity implements IOnMenuItemCli
 
 					@Override
 					public void run() {
-						mGameScene.setChildScene(mGameOverMenuScene);
-						mGameOverMenuScene.setVisible(true);
+						mSaveHighScoreAlertDialog.show();
 					}
 				};
 				if(mStrikeCount == 3)
@@ -354,7 +339,50 @@ public class MainGameActivity extends BaseGameActivity implements IOnMenuItemCli
 			}
 		});
 	}
+
+
+	private void createAlertDialogs() {
+		// Get the AlertDialog Builder class and save it in a variable.
+		AlertDialog.Builder saveAlertDialogBuilder = new AlertDialog.Builder(this);
+		saveAlertDialogBuilder.setTitle("High Score");
+		saveAlertDialogBuilder.setMessage("Enter your name:");
+		saveAlertDialogBuilder.setView(mHighScorerName);
+		saveAlertDialogBuilder.setPositiveButton("Save", saveToDbAlertDialogClickListener);
+		
+		mSaveHighScoreAlertDialog = saveAlertDialogBuilder.create();
+	}	
+	/**
+	 * Anonymous class used by the AlertDialog when the OK button is clicked
+	 */
+	private AlertDialog.OnClickListener saveToDbAlertDialogClickListener = new AlertDialog.OnClickListener() 
+	{
+		// When the button is clicked, call the reset method and resume the thread.
+		public void onClick(DialogInterface dialog, int which) 
+		{
+			mMainScene.setChildScene(mGameOverMenuScene);
+			mGameOverMenuScene.setVisible(true);
+		} // End of onClick method
+	}; // End of alertDialogResetOnClickListener anonymous inner class
+
+	private void createGameOverMenuScene() {
+		this.mGameOverMenuScene = new MenuScene(this.mCamera);
+		mGameOverMenuScene.getLastChild().attachChild(mGameOverMenuSprite);
+		final IMenuItem playAgainMenuItem = new ColorMenuItemDecorator(
+				new TextMenuItem(MENU_PLAY_AGAIN, mScoreFont, "Play again"), 0.5f, 0.5f, 0.5f, 1.0f, 1.0f, 1.0f);
+		playAgainMenuItem.setBlendFunction(GL10.GL_SRC_ALPHA, GL10.GL_ONE_MINUS_SRC_ALPHA);
+		this.mGameOverMenuScene.addMenuItem(playAgainMenuItem);
 	
+		final IMenuItem exitToMainMenuItem = new ColorMenuItemDecorator(
+				new TextMenuItem(MENU_EXIT_TO_MAIN_MENU, mScoreFont, "Exit"), 0.5f, 0.5f, 0.5f, 1.0f, 1.0f, 1.0f);
+		exitToMainMenuItem.setBlendFunction(GL10.GL_SRC_ALPHA, GL10.GL_ONE_MINUS_SRC_ALPHA);
+		this.mGameOverMenuScene.addMenuItem(exitToMainMenuItem);	
+	
+		this.mGameOverMenuScene.buildAnimations();
+		this.mGameOverMenuScene.setBackgroundEnabled(false);
+		this.mGameOverMenuScene.setOnMenuItemClickListener(this);
+		this.mGameOverMenuScene.setPosition(mGameOverMenuScene.getInitialX(), mGameOverMenuScene.getInitialY() + 70);
+		mGameOverMenuScene.setVisible(false);
+	}
 	private class Road extends AnimatedSprite
 	{
 		public Road(float pX, float pY, TiledTextureRegion pTiledTextureRegion) {
@@ -397,6 +425,7 @@ public class MainGameActivity extends BaseGameActivity implements IOnMenuItemCli
 			return super
 					.onAreaTouched(pSceneTouchEvent, pTouchAreaLocalX, pTouchAreaLocalY);
 		}
+		
 
 
 		private void hitBat() {
