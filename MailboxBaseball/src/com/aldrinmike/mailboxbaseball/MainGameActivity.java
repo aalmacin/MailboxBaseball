@@ -39,6 +39,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Color;
 import android.os.Handler;
+import android.text.InputFilter;
 import android.widget.EditText;
 
 public class MainGameActivity extends BaseGameActivity implements IOnMenuItemClickListener{
@@ -63,6 +64,7 @@ public class MainGameActivity extends BaseGameActivity implements IOnMenuItemCli
 	private ChangeableText mScoreKeeper;
 	private Scene mMainScene;
 	private Scene mGameScene;
+	private String mPlayer;
 	private int mScore;
 	private int mStrikeCount;
 	private Font mScoreFont;
@@ -80,6 +82,7 @@ public class MainGameActivity extends BaseGameActivity implements IOnMenuItemCli
 	private MenuScene mGameOverMenuScene;
 	private Sprite mGameOverMenuSprite;
 	private Font mFont;
+	private Controller mController;
 
 	@Override
 	public Engine onLoadEngine() {
@@ -212,7 +215,9 @@ public class MainGameActivity extends BaseGameActivity implements IOnMenuItemCli
 		mTruckTimer.schedule(mTruckTimerTask, (long)0, (long)1000);
 	}
 
-
+	@Override
+	public void onBackPressed() {
+	}
 	
 	private void dropTheTruck() {
 		mTruckSprite.registerEntityModifier(new MoveYModifier(5, -mTruckSprite.getHeight(), CAMERA_HEIGHT));
@@ -251,6 +256,10 @@ public class MainGameActivity extends BaseGameActivity implements IOnMenuItemCli
 		mScore = 0;
 		mStrikeCount = 0;
 		mHighScorerName = new EditText(this);
+		mHighScorerName.setHint("0 - 10 characters.");
+		mHighScorerName.setFilters(new InputFilter[] { new InputFilter.LengthFilter(10)});
+		
+		mController = new Controller(this);
 		createAlertDialogs();
 		createGameOverMenuScene();
 		
@@ -301,7 +310,22 @@ public class MainGameActivity extends BaseGameActivity implements IOnMenuItemCli
 
 					@Override
 					public void run() {
-						mSaveHighScoreAlertDialog.show();
+						mScore -= mStrikeCount;
+						if(mController.scoreBelongsToTop10(mScore) && mScore > 0){
+							mSaveHighScoreAlertDialog.setMessage(getDialogMessage());
+							mSaveHighScoreAlertDialog.show();
+						}
+						else
+						{
+							mMainScene.setChildScene(mGameOverMenuScene);
+							mGameOverMenuScene.setVisible(true);
+						}
+					}
+
+					private CharSequence getDialogMessage() {
+						return "Congrats, your score made it to the top 10." +
+								"\n Score: "+mScore +
+								"\n Enter your name:";
 					}
 				};
 				if(mStrikeCount == 3)
@@ -354,21 +378,26 @@ public class MainGameActivity extends BaseGameActivity implements IOnMenuItemCli
 	private void createAlertDialogs() {
 		// Get the AlertDialog Builder class and save it in a variable.
 		AlertDialog.Builder saveAlertDialogBuilder = new AlertDialog.Builder(this);
-		saveAlertDialogBuilder.setTitle("High Score");
-		saveAlertDialogBuilder.setMessage("Enter your name:");
+		saveAlertDialogBuilder.setTitle("High Score:");
 		saveAlertDialogBuilder.setView(mHighScorerName);
 		saveAlertDialogBuilder.setPositiveButton("Save", saveToDbAlertDialogClickListener);
+		saveAlertDialogBuilder.setCancelable(false);
 		
 		mSaveHighScoreAlertDialog = saveAlertDialogBuilder.create();
 	}	
+	
+	
+	
 	/**
 	 * Anonymous class used by the AlertDialog when the OK button is clicked
 	 */
 	private AlertDialog.OnClickListener saveToDbAlertDialogClickListener = new AlertDialog.OnClickListener() 
 	{
+
 		// When the button is clicked, call the reset method and resume the thread.
 		public void onClick(DialogInterface dialog, int which) 
 		{
+			mController.savePlayerAndScore(mPlayer,mScore);
 			mMainScene.setChildScene(mGameOverMenuScene);
 			mGameOverMenuScene.setVisible(true);
 		} // End of onClick method
