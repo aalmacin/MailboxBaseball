@@ -291,10 +291,17 @@ public class MainGameActivity extends BaseGameActivity implements IOnMenuItemCli
 			
 			@Override
 			public void onUpdate(float pSecondsElapsed) {
+				Runnable showHighScoreAddScreen = new Runnable() {
+
+					@Override
+					public void run() {
+						mSaveHighScoreAlertDialog.show();
+					}
+				};
 				if(mStrikeCount == 3)
 				{
 					stopTheWorld();
-					mSaveHighScoreAlertDialog.show();
+					mHandler.post(showHighScoreAddScreen);
 				}
 				if(mTruckSprite.collidesWith(mCarTiledSprite) && mTruckSprite.getY() < CAMERA_HEIGHT-10){
 					if(mCarInRight == mTruckInRight)
@@ -330,7 +337,7 @@ public class MainGameActivity extends BaseGameActivity implements IOnMenuItemCli
 						mTruckCrashedSprite.registerEntityModifier(new RotationModifier(3, 0, mTruckCrashedSprite.getRotation()+degCounter/3));
 						mCarCrashedSprite.registerEntityModifier(new RotationModifier(3, 0, mCarCrashedSprite.getRotation()+degCounter));
 						mCarCrashedSprite.registerEntityModifier(new MoveXModifier(3, xCarOrigin, mCarCrashedSprite.getX()+xPosCounter));
-						mSaveHighScoreAlertDialog.show();
+						mHandler.postDelayed(showHighScoreAddScreen,1500);
 					}
 				}
 			}

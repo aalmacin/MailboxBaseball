@@ -65,6 +65,8 @@ public class MainGameScreenActivity extends BaseGameActivity  implements IOnMenu
 
 	@Override
 	public void onLoadResources() {
+		
+		
 		mContext = this;
 		Texture mFontTexture = new Texture(256, 256,TextureOptions.BILINEAR_PREMULTIPLYALPHA);
 		FontFactory.setAssetBasePath("font/");
@@ -102,6 +104,8 @@ public class MainGameScreenActivity extends BaseGameActivity  implements IOnMenu
 	
 	@Override
 	public Scene onLoadScene() {
+
+
 		this.mEngine.registerUpdateHandler(new FPSLogger());
 		this.createStaticMenuScene();
 		this.createHelpScreen();
