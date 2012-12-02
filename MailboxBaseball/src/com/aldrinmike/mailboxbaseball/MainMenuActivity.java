@@ -24,7 +24,6 @@ import org.anddev.andengine.entity.sprite.AnimatedSprite;
 import org.anddev.andengine.entity.sprite.Sprite;
 import org.anddev.andengine.entity.sprite.TiledSprite;
 import org.anddev.andengine.entity.text.ChangeableText;
-import org.anddev.andengine.entity.text.Text;
 import org.anddev.andengine.entity.util.FPSLogger;
 import org.anddev.andengine.input.touch.TouchEvent;
 import org.anddev.andengine.opengl.font.Font;
@@ -61,6 +60,8 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 	private final static int MENU_HELP = 1;
 	private final static int MENU_HIGHSCORES = 2;
 	private final static int MENU_EXIT = 3;
+	private static final int MENU_PLAY_AGAIN = 4;
+	private static final int MENU_EXIT_TO_MAIN_MENU = 5;
 	
 	private Camera mCamera;
 	private Font mFont;
@@ -87,7 +88,7 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 	private Texture mTruckTexture;
 	private TextureRegion mTruckTextureRegion;
 	private Sprite mTruckSprite;
-	private Timer truckTimer;
+	private Timer mTruckTimer;
 	private Texture mTruckCrashedTexture;
 	private TiledTextureRegion mTruckCrashedTextureRegion;
 	private AnimatedSprite mTruckCrashedSprite;
@@ -107,6 +108,13 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 	private ChangeableText mStrikeKeeper;
 	private Texture mScoreFontTexture;
 	private Font mScoreFont;
+	private MenuScene mGameOverMenuScene;
+	private Scene mHighScoreScene;
+	private Texture mHighScoreTexture;
+	private TextureRegion mHighScoreTextureRegion;
+	private Sprite mHighScoreSceneSprite;
+	private Handler mHandler;
+	private TimerTask mTruckTimerTask;
 	
 	@Override
 	public Engine onLoadEngine() {
@@ -145,6 +153,13 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 
 		mHelpScreenSprite = new Sprite(CAMERA_WIDTH-this.mHelpScreenTextureRegion.getWidth(),
 				CAMERA_WIDTH-this.mHelpScreenTextureRegion.getWidth(),this.mHelpScreenTextureRegion);
+		
+		this.mHighScoreTexture = new Texture(1024,1024,TextureOptions.BILINEAR_PREMULTIPLYALPHA);
+		this.mHighScoreTextureRegion = TextureRegionFactory.createFromAsset(mHighScoreTexture, this, "gfx/highScore.png", 0, 0);
+		this.mEngine.getTextureManager().loadTexture(this.mHighScoreTexture);
+		
+		mHighScoreSceneSprite = new Sprite(CAMERA_WIDTH-this.mHighScoreTextureRegion.getWidth(),
+				CAMERA_WIDTH-this.mHighScoreTextureRegion.getWidth(),this.mHighScoreTextureRegion);
 
 		this.mBackButtonTexture = new Texture(1024,1024,TextureOptions.BILINEAR_PREMULTIPLYALPHA);
 		this.mBackButtonTextureRegion = TextureRegionFactory.createFromAsset(mBackButtonTexture, this, "gfx/backButton.png", 0,0);
@@ -190,7 +205,7 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 		this.mEngine.getTextureManager().loadTexture(this.mTruckCrashedTexture);
 		
 		this.mTruckCrashedSprite = new AnimatedSprite(0, 0, mTruckCrashedTextureRegion);		
-
+		mTruckCrashedSprite.setPosition(0,-mTruckCrashedSprite.getHeight());
 
 		this.mCarCrashedTexture = new Texture(512,512,TextureOptions.BILINEAR_PREMULTIPLYALPHA);
 		this.mCarCrashedTextureRegion = TextureRegionFactory.createTiledFromAsset(mCarCrashedTexture, this, "gfx/carCrashed.png", 
@@ -198,6 +213,7 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 		this.mEngine.getTextureManager().loadTexture(this.mCarCrashedTexture);
 		
 		this.mCarCrashedSprite = new AnimatedSprite(0, 0, mCarCrashedTextureRegion);
+		mCarCrashedSprite.setPosition(0, -mCarCrashedSprite.getHeight());
 		
 		mTruckSprite = new Sprite(-CAMERA_WIDTH,-CAMERA_HEIGHT,this.mTruckTextureRegion);		
 		
@@ -209,6 +225,10 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 	public Scene onLoadScene() {
 		this.mEngine.registerUpdateHandler(new FPSLogger());
 		this.createStaticMenuScene();
+		this.createGameScene();
+		this.createHelpScreen();
+		this.createHighScoreScreen();
+		this.createGameOverMenuScene();
 		this.mMainScene = new Scene(1);
 		mMainScene.getLastChild().attachChild(mMainBGSprite);
 		mMainScene.setChildScene(mStaticMenuScene);	
@@ -219,35 +239,93 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 	private void createStaticMenuScene() {		
 		this.mStaticMenuScene = new MenuScene(this.mCamera);
 		final IMenuItem startMenuItem = new ColorMenuItemDecorator(
-				new TextMenuItem(MENU_START, mFont, "Start"), 0.5f, 0.5f, 0.5f, 1.0f, 1.0f, 1.0f);
+				new TextMenuItem(MENU_START, mFont, "Start"), 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f);
 		startMenuItem.setBlendFunction(GL10.GL_SRC_ALPHA, GL10.GL_ONE_MINUS_SRC_ALPHA);
 		this.mStaticMenuScene.addMenuItem(startMenuItem);
 		
 		final IMenuItem helpMenuItem = new ColorMenuItemDecorator(
-				new TextMenuItem(MENU_HELP, mFont, "Help"), 0.5f, 0.5f, 0.5f, 1.0f, 1.0f, 1.0f);
+				new TextMenuItem(MENU_HELP, mFont, "Help"), 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f);
 		helpMenuItem.setBlendFunction(GL10.GL_SRC_ALPHA, GL10.GL_ONE_MINUS_SRC_ALPHA);
 		this.mStaticMenuScene.addMenuItem(helpMenuItem);
 		
 		final IMenuItem highScoreMenuItem = new ColorMenuItemDecorator(
-				new TextMenuItem(MENU_HIGHSCORES, mFont, "High Scores"), 0.5f, 0.5f, 0.5f, 1.0f, 1.0f, 1.0f);
+				new TextMenuItem(MENU_HIGHSCORES, mFont, "High Scores"), 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f);
 		highScoreMenuItem.setBlendFunction(GL10.GL_SRC_ALPHA, GL10.GL_ONE_MINUS_SRC_ALPHA);
 		this.mStaticMenuScene.addMenuItem(highScoreMenuItem);
 		
 		final IMenuItem exitMenuItem = new ColorMenuItemDecorator(
-				new TextMenuItem(MENU_EXIT, mFont, "Exit"), 0.5f, 0.5f, 0.5f, 1.0f, 1.0f, 1.0f);
+				new TextMenuItem(MENU_EXIT, mFont, "Exit"), 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f);
 		exitMenuItem.setBlendFunction(GL10.GL_SRC_ALPHA, GL10.GL_ONE_MINUS_SRC_ALPHA);
 		this.mStaticMenuScene.addMenuItem(exitMenuItem);		
 		
 		this.mStaticMenuScene.buildAnimations();
 		this.mStaticMenuScene.setBackgroundEnabled(false);
 		this.mStaticMenuScene.setOnMenuItemClickListener(this);
-		this.mStaticMenuScene.setPosition(mStaticMenuScene.getInitialX(), mStaticMenuScene.getInitialY() + 70);
+		this.mStaticMenuScene.setPosition(mStaticMenuScene.getInitialX(), mStaticMenuScene.getInitialY() + 90);
 	}
 
+	private void createGameOverMenuScene() {		
+		this.mGameOverMenuScene = new MenuScene(this.mCamera);
+		final IMenuItem playAgainMenuItem = new ColorMenuItemDecorator(
+				new TextMenuItem(MENU_PLAY_AGAIN, mFont, "Play again"), 0.5f, 0.5f, 0.5f, 1.0f, 1.0f, 1.0f);
+		playAgainMenuItem.setBlendFunction(GL10.GL_SRC_ALPHA, GL10.GL_ONE_MINUS_SRC_ALPHA);
+		this.mGameOverMenuScene.addMenuItem(playAgainMenuItem);
+		
+		final IMenuItem exitToMainMenuItem = new ColorMenuItemDecorator(
+				new TextMenuItem(MENU_EXIT_TO_MAIN_MENU, mFont, "Exit"), 0.5f, 0.5f, 0.5f, 1.0f, 1.0f, 1.0f);
+		exitToMainMenuItem.setBlendFunction(GL10.GL_SRC_ALPHA, GL10.GL_ONE_MINUS_SRC_ALPHA);
+		this.mGameOverMenuScene.addMenuItem(exitToMainMenuItem);	
+		
+		this.mGameOverMenuScene.buildAnimations();
+		this.mGameOverMenuScene.setBackgroundEnabled(false);
+		this.mGameOverMenuScene.setOnMenuItemClickListener(this);
+		this.mGameOverMenuScene.setPosition(mGameOverMenuScene.getInitialX(), mGameOverMenuScene.getInitialY() + 70);
+	}
+
+
+	private void resetGame() {	
+		this.mGameOverMenuScene.setVisible(false);
+		mCarTiledSprite.clearEntityModifiers();
+		mCarCrashedSprite.clearEntityModifiers();
+		mTruckSprite.clearEntityModifiers();
+		mTruckCrashedSprite.clearEntityModifiers();
+		mCarTiledSprite.setInitialPosition();
+		mTruckSprite.setInitialPosition();
+		mMailBoxSprite.setInitialPosition();	
+		mTruckCrashedSprite.setPosition(0,-mTruckCrashedSprite.getHeight());
+		mCarCrashedSprite.setPosition(0, -mCarCrashedSprite.getHeight());
+
+		mRoadTiledSprite.animate(300);
+		
+		mTruckTimer = new Timer();
+		mTruckTimerTask = new TimerTask() {			
+			private int timeElapsed;
+			@Override
+			public void run() {
+				timeElapsed++;
+				if(timeElapsed % 6 == 0)
+				{
+					boolean carLeft = (Math.random()>0.4f);
+					mTruckPosition = (carLeft)?TRUCK_LEFT_POSITION:TRUCK_RIGHT_POSITION;
+					mTruckInRight = (carLeft)?false:true;
+					mTruckSprite.setPosition(mTruckPosition, -CAMERA_HEIGHT);
+					dropTheTruck();
+				}
+				if(timeElapsed % 4 == 0)
+				{
+					mMailBoxSprite.setStatesThenDrop();
+				}
+			}
+			
+		};
+		mTruckTimer.schedule(mTruckTimerTask, (long)0, (long)1000);
+	}
+	
 	private void createGameScene()
 	{
 		mScore = 0;
 		mStrikeCount = 0;
+		
 		if(mGameScene == null){
 			mGameScene = new Scene(1);
 			mGameScene.getLastChild().attachChild(mMainBGSprite);
@@ -261,11 +339,8 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 			mGameScene.getLastChild().attachChild(mStrikeKeeper);
 			mGameScene.registerTouchArea(mMainBGSprite);
 			
-			mTruckCrashedSprite.setPosition(0, -mTruckCrashedSprite.getHeight());
-			mCarCrashedSprite.setPosition(0, -mCarCrashedSprite.getHeight());
-			
-			truckTimer = new Timer();
-			truckTimer.schedule(new TimerTask() {			
+			mTruckTimer = new Timer();
+			mTruckTimerTask = new TimerTask() {			
 				private int timeElapsed;
 				@Override
 				public void run() {
@@ -284,7 +359,8 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 					}
 				}
 				
-			}, (long)0, (long)1000);
+			};
+			mTruckTimer.schedule(mTruckTimerTask, (long)0, (long)1000);
 		}
 		
 		mGameScene.registerUpdateHandler(new IUpdateHandler() {
@@ -328,6 +404,14 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 						mTruckCrashedSprite.registerEntityModifier(new RotationModifier(3, 0, mTruckCrashedSprite.getRotation()+degCounter/3));
 						mCarCrashedSprite.registerEntityModifier(new RotationModifier(3, 0, mCarCrashedSprite.getRotation()+degCounter));
 						mCarCrashedSprite.registerEntityModifier(new MoveXModifier(3, xCarOrigin, mCarCrashedSprite.getX()+xPosCounter));
+						Runnable showGameOverScreen = new Runnable() {
+							
+							@Override
+							public void run() {
+								mGameScene.setChildScene(mGameOverMenuScene);
+							}
+						};
+						mHandler.postDelayed(showGameOverScreen, 3000);
 					}
 				}
 			}
@@ -340,7 +424,7 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 
 	private void stopTheWorld() {
 		mRoadTiledSprite.stopAnimation();
-		truckTimer.cancel();
+		mTruckTimer.cancel();
 		mMailBoxSprite.clearEntityModifiers();
 		mTruckSprite.clearEntityModifiers();
 	}
@@ -350,6 +434,14 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 			mHelpScene = new Scene(1);
 			mHelpScene.getLastChild().attachChild(mHelpScreenSprite);
 			mHelpScene.getLastChild().attachChild(mBackButtonSprite);
+		}
+	}
+
+	private void createHighScoreScreen() {
+		if(mHighScoreScene == null){
+			mHighScoreScene = new Scene(1);
+			mHighScoreScene.getLastChild().attachChild(mHighScoreSceneSprite);
+			mHighScoreScene.getLastChild().attachChild(mBackButtonSprite);
 		}
 	}
 	
@@ -362,17 +454,22 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 			float pMenuItemLocalX, float pMenuItemLocalY) {
 		switch (pMenuItem.getID()) {
 		case MENU_START:		
-			createGameScene();
 			this.mMainScene.setChildScene(mGameScene);
 			return true;
 		case MENU_HELP:
-			createHelpScreen();
 			this.mMainScene.setChildScene(mHelpScene);
 			return true;
 		case MENU_HIGHSCORES:
+			this.mMainScene.setChildScene(mHighScoreScene);
 			return true;
 		case MENU_EXIT:
 			this.finish();
+			return true;
+		case MENU_PLAY_AGAIN:
+			resetGame();
+			return true;
+		case MENU_EXIT_TO_MAIN_MENU:
+			this.mMainScene.setChildScene(mStaticMenuScene);
 			return true;
 		default:
 			return false;
@@ -400,9 +497,6 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 
 	private class MainBG extends Sprite
 	{
-		private Handler mHandler;
-
-
 		public MainBG(float pX, float pY, TextureRegion pTextureRegion) {
 			super(pX, pY, pTextureRegion);
 			mHandler = new Handler();
@@ -493,7 +587,7 @@ public class MainMenuActivity extends BaseGameActivity  implements IOnMenuItemCl
 		}
 		
 		private void drop() {
-			this.registerEntityModifier(new MoveYModifier(3, -mMailBoxSprite.getHeight(), CAMERA_HEIGHT));
+			this.registerEntityModifier(new MoveYModifier(3, this.getHeight(), CAMERA_HEIGHT));
 		}
 
 		public boolean isEmpty() {
