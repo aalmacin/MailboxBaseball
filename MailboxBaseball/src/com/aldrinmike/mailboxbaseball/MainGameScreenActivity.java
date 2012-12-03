@@ -79,7 +79,7 @@ public class MainGameScreenActivity extends BaseGameActivity  implements IOnMenu
 		this.mEngine.getFontManager().loadFont(this.mFont);	
 		
 		Texture mScoreFontTexture = new Texture(256, 256,TextureOptions.BILINEAR_PREMULTIPLYALPHA);
-		mHighScoreFont = FontFactory.createFromAsset(mScoreFontTexture, this, "FLORLRG_.ttf", 20, true, Color.BLACK);
+		mHighScoreFont = FontFactory.createFromAsset(mScoreFontTexture, this, "FLORLRG_.ttf", 40, true, Color.BLACK);
 		mEngine.getTextureManager().loadTexture(mScoreFontTexture);
 		mEngine.getFontManager().loadFont(mHighScoreFont);	
 		
