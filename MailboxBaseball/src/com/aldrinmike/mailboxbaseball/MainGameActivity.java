@@ -49,7 +49,7 @@ public class MainGameActivity extends BaseGameActivity implements IOnMenuItemCli
 
 	private static final int CAR_LEFT_POSITION = 50;
 	private static final int CAR_RIGHT_POSITION = 200;
-	private static final int TRUCK_LEFT_POSITION = CAR_LEFT_POSITION + 30;
+	private static final int TRUCK_LEFT_POSITION = CAR_LEFT_POSITION + 50;
 	private static final int TRUCK_RIGHT_POSITION = CAR_RIGHT_POSITION + 30;
 	private static final int CAR_YPOSITION = CAMERA_HEIGHT-300;	
 	private static final int MAILBOX_LEFT_POS = CAR_LEFT_POSITION - 30;
@@ -83,6 +83,8 @@ public class MainGameActivity extends BaseGameActivity implements IOnMenuItemCli
 	private Sprite mGameOverMenuSprite;
 	private Font mFont;
 	private Controller mController;
+	private float mTruckSpeed;
+	private float mMailboxSpeed;
 
 	@Override
 	public Engine onLoadEngine() {
@@ -175,53 +177,13 @@ public class MainGameActivity extends BaseGameActivity implements IOnMenuItemCli
 	}
 
 
-	private void resetGame() {
-		mCarInRight = true;	
-		mScore = 0;
-		mStrikeCount = 0;
-		mCarTiledSprite.clearEntityModifiers();
-		mCarCrashedSprite.clearEntityModifiers();
-		mTruckSprite.clearEntityModifiers();
-		mTruckCrashedSprite.clearEntityModifiers();
-		mCarTiledSprite.setInitialPosition();
-		mTruckSprite.setInitialPosition();
-		
-		mMailBoxSprite.setPosition(0,-(mMailBoxSprite.getHeight()+100));	
-		mTruckCrashedSprite.setPosition(0,-(mTruckCrashedSprite.getHeight()+100));
-		mCarCrashedSprite.setPosition(0, -(mCarCrashedSprite.getHeight()+100));
-
-		mRoadTiledSprite.animate(300);
-		
-		mTruckTimer = new Timer();
-		mTruckTimerTask = new TimerTask() {			
-			private int timeElapsed;
-			@Override
-			public void run() {
-				timeElapsed++;
-				if(timeElapsed % 6 == 0)
-				{
-					boolean carLeft = (Math.random()>0.4f);
-					mTruckPosition = (carLeft)?TRUCK_LEFT_POSITION:TRUCK_RIGHT_POSITION;
-					mTruckInRight = (carLeft)?false:true;
-					mTruckSprite.setPosition(mTruckPosition, -CAMERA_HEIGHT);
-					dropTheTruck();
-				}
-				if(timeElapsed % 4 == 0)
-				{
-					mMailBoxSprite.setStatesThenDrop();
-				}
-			}
-			
-		};
-		mTruckTimer.schedule(mTruckTimerTask, (long)0, (long)1000);
-	}
-
+	
 	@Override
 	public void onBackPressed() {
 	}
 	
 	private void dropTheTruck() {
-		mTruckSprite.registerEntityModifier(new MoveYModifier(5, -mTruckSprite.getHeight(), CAMERA_HEIGHT));
+		mTruckSprite.registerEntityModifier(new MoveYModifier(mTruckSpeed, -mTruckSprite.getHeight(), CAMERA_HEIGHT));
 	}
 
 	private void stopTheWorld() {
@@ -253,9 +215,7 @@ public class MainGameActivity extends BaseGameActivity implements IOnMenuItemCli
 	
 	private void createGameScene()
 	{
-		mCarInRight = true;
-		mScore = 0;
-		mStrikeCount = 0;
+		initializeGameVals();
 		mHighScorerName = new EditText(this);
 		mHighScorerName.setHint("0 - 10 characters.");
 		mHighScorerName.setFilters(new InputFilter[] { new InputFilter.LengthFilter(10)});
@@ -276,28 +236,7 @@ public class MainGameActivity extends BaseGameActivity implements IOnMenuItemCli
 			mGameScene.getLastChild().attachChild(mStrikeKeeper);
 			mGameScene.registerTouchArea(mRoadTiledSprite);
 			
-			mTruckTimer = new Timer();
-			mTruckTimerTask = new TimerTask() {			
-				private int timeElapsed;
-				@Override
-				public void run() {
-					timeElapsed++;
-					if(timeElapsed % 6 == 0)
-					{
-						boolean carLeft = (Math.random()>0.4f);
-						mTruckPosition = (carLeft)?TRUCK_LEFT_POSITION:TRUCK_RIGHT_POSITION;
-						mTruckInRight = (carLeft)?false:true;
-						mTruckSprite.setPosition(mTruckPosition, -CAMERA_HEIGHT);
-						dropTheTruck();
-					}
-					if(timeElapsed % 4 == 0)
-					{
-						mMailBoxSprite.setStatesThenDrop();
-					}
-				}
-				
-			};
-			mTruckTimer.schedule(mTruckTimerTask, (long)0, (long)1000);
+			buildTimer();
 		}
 		
 		mGameScene.registerUpdateHandler(new IUpdateHandler() {
@@ -373,6 +312,65 @@ public class MainGameActivity extends BaseGameActivity implements IOnMenuItemCli
 				}
 			}
 		});
+	}
+	private void initializeGameVals() {
+		mCarInRight = true;
+		mScore = 0;
+		mStrikeCount = 0;
+		mTruckSpeed = 5;
+		mMailboxSpeed = 4;
+		mScoreKeeper.setText("Score: "+mScore);
+		mStrikeKeeper.setText("Strikes: "+mStrikeCount);
+	}
+
+	private void resetGame() {
+		initializeGameVals();
+		mCarTiledSprite.clearEntityModifiers();
+		mCarCrashedSprite.clearEntityModifiers();
+		mTruckSprite.clearEntityModifiers();
+		mTruckCrashedSprite.clearEntityModifiers();
+		mCarTiledSprite.setInitialPosition();
+		mTruckSprite.setInitialPosition();
+		
+		mMailBoxSprite.setPosition(0,-(mMailBoxSprite.getHeight()+100));	
+		mTruckCrashedSprite.setPosition(0,-(mTruckCrashedSprite.getHeight()+100));
+		mCarCrashedSprite.setPosition(0, -(mCarCrashedSprite.getHeight()+100));
+
+		mRoadTiledSprite.animate(300);
+		
+		buildTimer();
+	}
+
+	private void buildTimer() {		
+		mTruckTimer = new Timer();
+		mTruckTimerTask = new TimerTask() {			
+			private int timeElapsed;
+			@Override
+			public void run() {
+				timeElapsed++;
+
+				if(timeElapsed % 60 == 0 && mTruckSpeed >= 0.5f && mMailboxSpeed >= 0.5f)
+				{
+					mTruckSpeed -= 0.5f;
+					mMailboxSpeed -= 0.5f;
+				}
+				
+				if(timeElapsed % (mTruckSpeed+1) == 0)
+				{
+					boolean carLeft = (Math.random()>0.4f);
+					mTruckPosition = (carLeft)?TRUCK_LEFT_POSITION:TRUCK_RIGHT_POSITION;
+					mTruckInRight = (carLeft)?false:true;
+					mTruckSprite.setPosition(mTruckPosition, -CAMERA_HEIGHT);
+					dropTheTruck();
+				}
+				if(timeElapsed % (mMailboxSpeed+1) == 0)
+				{
+					mMailBoxSprite.setStatesThenDrop();
+				}
+			}
+			
+		};
+		mTruckTimer.schedule(mTruckTimerTask, (long)0, (long)1000);
 	}
 
 
@@ -519,7 +517,7 @@ public class MainGameActivity extends BaseGameActivity implements IOnMenuItemCli
 		}
 		
 		private void drop() {
-			this.registerEntityModifier(new MoveYModifier(3, -this.getHeight(), CAMERA_HEIGHT));
+			this.registerEntityModifier(new MoveYModifier(mMailboxSpeed, -this.getHeight(), CAMERA_HEIGHT));
 		}
 
 		public boolean isEmpty() {
