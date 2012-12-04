@@ -73,15 +73,15 @@ public class MainGameScreenActivity extends BaseGameActivity  implements IOnMenu
 		
 		mContext = this;
 		Texture mFontTexture = new Texture(256, 256,TextureOptions.BILINEAR_PREMULTIPLYALPHA);
+		Texture mHighScoreFontTexture = new Texture(256, 256,TextureOptions.BILINEAR_PREMULTIPLYALPHA); 
 		FontFactory.setAssetBasePath("font/");
 		this.mFont = FontFactory.createFromAsset(mFontTexture, this, "kulminoituva.ttf", 48, true, Color.BLACK);
 		this.mEngine.getTextureManager().loadTexture(mFontTexture);
 		this.mEngine.getFontManager().loadFont(this.mFont);	
 		
-		Texture mScoreFontTexture = new Texture(256, 256,TextureOptions.BILINEAR_PREMULTIPLYALPHA);
-		mHighScoreFont = FontFactory.createFromAsset(mScoreFontTexture, this, "FLORLRG_.ttf", 40, true, Color.BLACK);
-		mEngine.getTextureManager().loadTexture(mScoreFontTexture);
-		mEngine.getFontManager().loadFont(mHighScoreFont);	
+		this.mHighScoreFont = FontFactory.createFromAsset(mHighScoreFontTexture, this, "kulminoituva.ttf", 38, true, Color.BLACK);
+		this.mEngine.getTextureManager().loadTexture(mHighScoreFontTexture);
+		this.mEngine.getFontManager().loadFont(this.mHighScoreFont);	
 		
 		Texture mBackgroundTexture = new Texture(1024,1024,TextureOptions.BILINEAR_PREMULTIPLYALPHA);
 		TextureRegion mBackgroundTextureRegion = TextureRegionFactory.createFromAsset(mBackgroundTexture, this, "gfx/background.png", 0, 0);
