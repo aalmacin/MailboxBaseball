@@ -18,22 +18,17 @@ import org.anddev.andengine.ui.activity.BaseGameActivity;
 import android.content.Intent;
 import android.os.Handler;
 
-public class SplashActivity extends BaseGameActivity {
+public class SplashScreenActivity extends BaseGameActivity {
 
 	private final static int CAMERA_WIDTH = 480;
 	private final static int CAMERA_HEIGHT = 800;
-//	private int CAMERA_WIDTH;
-//	private int CAMERA_HEIGHT;
+	private final static int SPLASH_DURATION = 3000;
 	private Camera mCamera;
 	private Texture mTexture;
 	private TextureRegion mSplashTextureRegion;
 	private Handler mHandler;
 	
 	public Engine onLoadEngine() {
-//		Point pointSize = new Point();
-//		getWindowManager().getDefaultDisplay().getSize(pointSize);
-//		int CAMERA_WIDTH = pointSize.x;
-//		int CAMERA_HEIGHT = pointSize.y;
 		mHandler = new Handler();
 		this.mCamera = new Camera(0,0,CAMERA_WIDTH,CAMERA_HEIGHT);
 		return new Engine(new EngineOptions(true, ScreenOrientation.PORTRAIT, 
@@ -59,15 +54,16 @@ public class SplashActivity extends BaseGameActivity {
 	}
 
 	public void onLoadComplete() {
-		mHandler.postDelayed(mLaunchTask,3000);
+		mHandler.postDelayed(mLaunchTask,SPLASH_DURATION);
 	}
 	
+	/**
+	 * Runnable that launches the ControlScreenActivity
+	 */
 	private Runnable mLaunchTask = new Runnable() {
-		
-		@Override
 		public void run() {
-			Intent myIntent = new Intent(SplashActivity.this,MainGameScreenActivity.class);
-			SplashActivity.this.startActivity(myIntent);
+			Intent myIntent = new Intent(SplashScreenActivity.this,ControlScreenActivity.class);
+			SplashScreenActivity.this.startActivity(myIntent);
 			finish();
 		}
 	};
