@@ -50,7 +50,7 @@ public class MainGameScreenActivity extends BaseGameActivity implements IOnMenuI
 	private static final int CAR_LEFT_POSITION = 50;
 	private static final int CAR_RIGHT_POSITION = 200;
 	private static final int TRUCK_LEFT_POSITION = CAR_LEFT_POSITION + 50;
-	private static final int TRUCK_RIGHT_POSITION = CAR_RIGHT_POSITION + 30;
+	private static final int TRUCK_RIGHT_POSITION = CAR_RIGHT_POSITION + 40;
 	private static final int CAR_YPOSITION = CAMERA_HEIGHT-300;	
 	private static final int MAILBOX_LEFT_POS = CAR_LEFT_POSITION - 30;
 	private static final int MAILBOX_RIGHT_POS = CAR_RIGHT_POSITION + 200;
