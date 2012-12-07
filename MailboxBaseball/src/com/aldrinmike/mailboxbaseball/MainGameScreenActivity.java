@@ -11,6 +11,7 @@ import org.anddev.andengine.engine.handler.IUpdateHandler;
 import org.anddev.andengine.engine.options.EngineOptions;
 import org.anddev.andengine.engine.options.EngineOptions.ScreenOrientation;
 import org.anddev.andengine.engine.options.resolutionpolicy.RatioResolutionPolicy;
+import org.anddev.andengine.entity.IEntity;
 import org.anddev.andengine.entity.modifier.MoveXModifier;
 import org.anddev.andengine.entity.modifier.MoveYModifier;
 import org.anddev.andengine.entity.modifier.RotationModifier;
@@ -24,6 +25,7 @@ import org.anddev.andengine.entity.sprite.AnimatedSprite;
 import org.anddev.andengine.entity.sprite.Sprite;
 import org.anddev.andengine.entity.sprite.TiledSprite;
 import org.anddev.andengine.entity.text.ChangeableText;
+import org.anddev.andengine.entity.text.Text;
 import org.anddev.andengine.input.touch.TouchEvent;
 import org.anddev.andengine.opengl.font.Font;
 import org.anddev.andengine.opengl.font.FontFactory;
@@ -56,6 +58,8 @@ public class MainGameScreenActivity extends BaseGameActivity implements IOnMenuI
 	private static final int MAILBOX_RIGHT_POS = CAR_RIGHT_POSITION + 200;
 	private static final int MENU_PLAY_AGAIN = 4;
 	private static final int MENU_EXIT_TO_MAIN_MENU = 5;
+	private static final float GAME_OVER_X = 150;
+	private static final float GAME_OVER_Y = 200;
 	private Camera mCamera;
 	private AnimatedSprite mTruckCrashedSprite;
 	private AnimatedSprite mCarCrashedSprite;
@@ -85,6 +89,7 @@ public class MainGameScreenActivity extends BaseGameActivity implements IOnMenuI
 	private Controller mController;
 	private float mTruckSpeed;
 	private float mMailboxSpeed;
+	private ChangeableText mGameOverScoreText;
 
 	@Override
 	public Engine onLoadEngine() {
@@ -160,6 +165,8 @@ public class MainGameScreenActivity extends BaseGameActivity implements IOnMenuI
 		
 		mScoreKeeper = new ChangeableText(5, 5, mScoreFont, "Score: 0     ");
 		mStrikeKeeper = new ChangeableText(mScoreKeeper.getX(), mScoreKeeper.getY()+mScoreKeeper.getHeight()+15, mScoreFont, "Strikes: 0     ");
+		
+		mGameOverScoreText = new ChangeableText(GAME_OVER_X, GAME_OVER_Y, mFont, "Score: NONENONENONE");
 	}
 
 	@Override
@@ -251,6 +258,7 @@ public class MainGameScreenActivity extends BaseGameActivity implements IOnMenuI
 					@Override
 					public void run() {
 						mScore -= mStrikeCount;
+						mGameOverScoreText.setText("Score: "+mScore);
 						if(mController.scoreBelongsToTop10(mScore) && mScore > 0){
 							mSaveHighScoreAlertDialog.setMessage(getDialogMessage());
 							mSaveHighScoreAlertDialog.show();
@@ -404,8 +412,9 @@ public class MainGameScreenActivity extends BaseGameActivity implements IOnMenuI
 	}; // End of alertDialogResetOnClickListener anonymous inner class
 
 	private void createGameOverMenuScene() {
-		this.mGameOverMenuScene = new MenuScene(this.mCamera);
+		this.mGameOverMenuScene = new MenuScene(this.mCamera);		
 		mGameOverMenuScene.getLastChild().attachChild(mGameOverMenuSprite);
+		mGameOverMenuScene.getLastChild().attachChild(mGameOverScoreText);
 		final IMenuItem playAgainMenuItem = new ColorMenuItemDecorator(
 				new TextMenuItem(MENU_PLAY_AGAIN, mFont, "Play again"), 0.5f, 0.5f, 0.5f, 1.0f, 1.0f, 1.0f);
 		playAgainMenuItem.setBlendFunction(GL10.GL_SRC_ALPHA, GL10.GL_ONE_MINUS_SRC_ALPHA);
