@@ -38,8 +38,7 @@ public class Controller {
 	public static final String HIGH_SCORE_TABLE = "highScore"; // The name
 																		// of
 																		// the
-																		// shopping
-																		// list
+																		// high score
 																		// table
 	public static final String PLAYER_ID = "_id"; // The id that
 															// identifies each
