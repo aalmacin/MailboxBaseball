@@ -38,7 +38,8 @@ public class Controller {
 	public static final String HIGH_SCORE_TABLE = "highScore"; // The name
 																		// of
 																		// the
-																		// high score
+																		// shopping
+																		// list
 																		// table
 	public static final String PLAYER_ID = "_id"; // The id that
 															// identifies each
@@ -177,9 +178,9 @@ public class Controller {
 			ShoppingListSQLHelper shoppingListSQLHelper = new ShoppingListSQLHelper(
 					context, DATABASE_NAME, null, DATABASE_VERSION);
 			// Get the db from the shoppingListSQLHelper
-			db = shoppingListSQLHelper.getReadableDatabase();
+			db = shoppingListSQLHelper.getReadableDatabase();//test
 			return db; // Return the db
-		} // End of openToRead Method
+		} // End of openToRead Method //test
 
 		/**
 		 * Opens the writable database.

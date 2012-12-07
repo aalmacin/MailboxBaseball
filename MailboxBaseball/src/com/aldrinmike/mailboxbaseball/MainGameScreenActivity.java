@@ -433,6 +433,11 @@ public class MainGameScreenActivity extends BaseGameActivity implements IOnMenuI
 	}
 	private class Road extends AnimatedSprite
 	{
+		private static final float MAILBOX_HIT_AREA_MIN = CAR_YPOSITION+126;
+		private static final float MAILBOX_HIT_AREA_MAX = CAMERA_HEIGHT-100;
+
+
+
 		public Road(float pX, float pY, TiledTextureRegion pTiledTextureRegion) {
 			super(pX, pY, pTiledTextureRegion);
 			mHandler = new Handler();
@@ -484,7 +489,8 @@ public class MainGameScreenActivity extends BaseGameActivity implements IOnMenuI
 					mCarTiledSprite.setCurrentTileIndex(0);
 				}
 			};
-			if(mCarTiledSprite.collidesWith(mMailBoxSprite) && !mMailBoxSprite.isHit())
+			if(mCarTiledSprite.collidesWith(mMailBoxSprite) && !mMailBoxSprite.isHit() && 
+					(mMailBoxSprite.getY() > MAILBOX_HIT_AREA_MIN) && (mMailBoxSprite.getY() < MAILBOX_HIT_AREA_MAX))
 			{
 				if(mMailBoxSprite.isEmpty)
 					mScore++;
