@@ -234,11 +234,11 @@ public class MainGameScreenActivity extends BaseGameActivity implements IOnMenuI
 		if(mGameScene == null){
 			mGameScene = new Scene(1);
 			mGameScene.getLastChild().attachChild(mRoadTiledSprite);
+			mGameScene.getLastChild().attachChild(mMailBoxSprite);
 			mGameScene.getLastChild().attachChild(mCarTiledSprite);
 			mGameScene.getLastChild().attachChild(mTruckSprite);
 			mGameScene.getLastChild().attachChild(mTruckCrashedSprite);
 			mGameScene.getLastChild().attachChild(mCarCrashedSprite);
-			mGameScene.getLastChild().attachChild(mMailBoxSprite);
 			mGameScene.getLastChild().attachChild(mScoreKeeper);
 			mGameScene.getLastChild().attachChild(mStrikeKeeper);
 			mGameScene.registerTouchArea(mRoadTiledSprite);
@@ -433,7 +433,7 @@ public class MainGameScreenActivity extends BaseGameActivity implements IOnMenuI
 	}
 	private class Road extends AnimatedSprite
 	{
-		private static final float MAILBOX_HIT_AREA_MIN = CAR_YPOSITION+126;
+		private static final float MAILBOX_HIT_AREA_MIN = CAR_YPOSITION+50;
 		private static final float MAILBOX_HIT_AREA_MAX = CAMERA_HEIGHT-100;
 
 
