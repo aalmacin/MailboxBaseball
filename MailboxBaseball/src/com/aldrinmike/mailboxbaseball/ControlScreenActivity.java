@@ -42,6 +42,7 @@ public class ControlScreenActivity extends BaseGameActivity  implements IOnMenuI
 	private final static int MENU_HELP = 1;
 	private final static int MENU_HIGHSCORES = 2;
 	private final static int MENU_EXIT = 3;
+	private static final float BACK_BUTTON_X = 20;
 	
 	private Camera mCamera;
 	private Font mFont;
@@ -108,7 +109,17 @@ public class ControlScreenActivity extends BaseGameActivity  implements IOnMenuI
 		TextureRegion mBackButtonTextureRegion = TextureRegionFactory.createFromAsset(mBackButtonTexture, this, "gfx/backButton.png", 0,0);
 		mEngine.getTextureManager().loadTexture(mBackButtonTexture);
 		
-		mBackButtonSprite = new BackButton(40,CAMERA_HEIGHT-100,mBackButtonTextureRegion);		
+		mBackButtonSprite = new Sprite(BACK_BUTTON_X,CAMERA_HEIGHT-90,mBackButtonTextureRegion){			
+			@Override
+			public boolean onAreaTouched(TouchEvent pSceneTouchEvent,
+					float pTouchAreaLocalX, float pTouchAreaLocalY) {
+					mMainScene.getLastChild().attachChild(mBackgroundSprite);
+					mMainScene.setChildScene(mStaticMenuScene);
+				
+				return super
+						.onAreaTouched(pSceneTouchEvent, pTouchAreaLocalX, pTouchAreaLocalY);
+			}
+		};		
 	}
 	
 	@Override
@@ -239,23 +250,5 @@ public class ControlScreenActivity extends BaseGameActivity  implements IOnMenuI
 		
 		
 	}
-	
-	private class BackButton extends Sprite
-	{
-
-		public BackButton(float pX, float pY, TextureRegion pTextureRegion) {
-			super(pX, pY, pTextureRegion);
-		}		
-		
-		@Override
-		public boolean onAreaTouched(TouchEvent pSceneTouchEvent,
-				float pTouchAreaLocalX, float pTouchAreaLocalY) {
-				mMainScene.getLastChild().attachChild(mBackgroundSprite);
-				mMainScene.setChildScene(mStaticMenuScene);
-			
-			return super
-					.onAreaTouched(pSceneTouchEvent, pTouchAreaLocalX, pTouchAreaLocalY);
-		}
-	}	
 	
 }
