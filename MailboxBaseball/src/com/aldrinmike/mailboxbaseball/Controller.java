@@ -178,9 +178,9 @@ public class Controller {
 			ShoppingListSQLHelper shoppingListSQLHelper = new ShoppingListSQLHelper(
 					context, DATABASE_NAME, null, DATABASE_VERSION);
 			// Get the db from the shoppingListSQLHelper
-			db = shoppingListSQLHelper.getReadableDatabase();//test
+			db = shoppingListSQLHelper.getReadableDatabase();
 			return db; // Return the db
-		} // End of openToRead Method //test
+		} // End of openToRead Method
 
 		/**
 		 * Opens the writable database.
