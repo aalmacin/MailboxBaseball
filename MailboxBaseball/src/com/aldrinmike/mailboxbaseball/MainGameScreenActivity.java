@@ -1,5 +1,7 @@
 package com.aldrinmike.mailboxbaseball;
 
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -11,7 +13,6 @@ import org.anddev.andengine.engine.handler.IUpdateHandler;
 import org.anddev.andengine.engine.options.EngineOptions;
 import org.anddev.andengine.engine.options.EngineOptions.ScreenOrientation;
 import org.anddev.andengine.engine.options.resolutionpolicy.RatioResolutionPolicy;
-import org.anddev.andengine.entity.IEntity;
 import org.anddev.andengine.entity.modifier.MoveXModifier;
 import org.anddev.andengine.entity.modifier.MoveYModifier;
 import org.anddev.andengine.entity.modifier.RotationModifier;
@@ -25,7 +26,6 @@ import org.anddev.andengine.entity.sprite.AnimatedSprite;
 import org.anddev.andengine.entity.sprite.Sprite;
 import org.anddev.andengine.entity.sprite.TiledSprite;
 import org.anddev.andengine.entity.text.ChangeableText;
-import org.anddev.andengine.entity.text.Text;
 import org.anddev.andengine.input.touch.TouchEvent;
 import org.anddev.andengine.opengl.font.Font;
 import org.anddev.andengine.opengl.font.FontFactory;
@@ -60,6 +60,7 @@ public class MainGameScreenActivity extends BaseGameActivity implements IOnMenuI
 	private static final int MENU_EXIT_TO_MAIN_MENU = 5;
 	private static final float GAME_OVER_X = 150;
 	private static final float GAME_OVER_Y = 200;
+	private static final int MAILBOX_COUNT = 3;
 	private Camera mCamera;
 	private AnimatedSprite mTruckCrashedSprite;
 	private AnimatedSprite mCarCrashedSprite;
@@ -73,7 +74,7 @@ public class MainGameScreenActivity extends BaseGameActivity implements IOnMenuI
 	private int mStrikeCount;
 	private Font mScoreFont;
 	private TiledSprite mCarTiledSprite;
-	private MailBox mMailBoxSprite;
+	private ArrayList<MailBox> mMailBoxSprites;
 	private Road mRoadTiledSprite;
 	private Timer mTruckTimer;
 	private int mTruckPosition;
@@ -126,13 +127,14 @@ public class MainGameScreenActivity extends BaseGameActivity implements IOnMenuI
 		
 		mCarTiledSprite = new TiledSprite(CAR_RIGHT_POSITION, CAR_YPOSITION, mCarTiledTextureRegion);
 		
-		Texture mMailBoxTiledTexture = new Texture(1024, 1024, TextureOptions.BILINEAR_PREMULTIPLYALPHA);
-		TiledTextureRegion mMailBoxTiledTextureRegion = TextureRegionFactory.createTiledFromAsset(mMailBoxTiledTexture, this, "gfx/mailbox.png", 
-				0, 0, 4, 1);
-		mEngine.getTextureManager().loadTexture(mMailBoxTiledTexture);
-		
-		mMailBoxSprite = new MailBox(mMailBoxTiledTextureRegion);
-		
+		mMailBoxSprites = new ArrayList<MailBox>();
+		for(int i = 0; i<MAILBOX_COUNT;i++){			
+			Texture mMailBoxTiledTexture = new Texture(1024, 1024, TextureOptions.BILINEAR_PREMULTIPLYALPHA);
+			TiledTextureRegion mMailBoxTiledTextureRegion = TextureRegionFactory.createTiledFromAsset(mMailBoxTiledTexture, this, "gfx/mailbox.png", 
+					0, 0, 8, 1);
+			mEngine.getTextureManager().loadTexture(mMailBoxTiledTexture);
+			mMailBoxSprites.add(new MailBox(mMailBoxTiledTextureRegion));
+		}
 		Texture mRoadTiledTexture = new Texture(2048, 2048, TextureOptions.BILINEAR_PREMULTIPLYALPHA);
 		TiledTextureRegion mRoadTiledTextureRegion = TextureRegionFactory.createTiledFromAsset(mRoadTiledTexture, this, "gfx/gameScreen.png", 
 				0, 0, 3, 1);
@@ -196,7 +198,10 @@ public class MainGameScreenActivity extends BaseGameActivity implements IOnMenuI
 	private void stopTheWorld() {
 		mRoadTiledSprite.stopAnimation();
 		mTruckTimer.cancel();
-		mMailBoxSprite.clearEntityModifiers();
+		Iterator<MailBox> it = mMailBoxSprites.iterator();
+		while(it.hasNext()){
+			it.next().clearEntityModifiers();
+		}
 		mTruckSprite.clearEntityModifiers();
 	}
 	
@@ -234,7 +239,8 @@ public class MainGameScreenActivity extends BaseGameActivity implements IOnMenuI
 		if(mGameScene == null){
 			mGameScene = new Scene(1);
 			mGameScene.getLastChild().attachChild(mRoadTiledSprite);
-			mGameScene.getLastChild().attachChild(mMailBoxSprite);
+			for(int i=0;i<MAILBOX_COUNT;i++)
+				mGameScene.getLastChild().attachChild(mMailBoxSprites.get(i));
 			mGameScene.getLastChild().attachChild(mCarTiledSprite);
 			mGameScene.getLastChild().attachChild(mTruckSprite);
 			mGameScene.getLastChild().attachChild(mTruckCrashedSprite);
@@ -339,8 +345,14 @@ public class MainGameScreenActivity extends BaseGameActivity implements IOnMenuI
 		mTruckCrashedSprite.clearEntityModifiers();
 		mCarTiledSprite.setInitialPosition();
 		mTruckSprite.setInitialPosition();
-		
-		mMailBoxSprite.setPosition(0,-(mMailBoxSprite.getHeight()+100));	
+
+		Iterator<MailBox> it = mMailBoxSprites.iterator();
+		for(int i=0;i<MAILBOX_COUNT;i++)
+		{
+			MailBox tempMailbox = it.next();
+			tempMailbox.setPosition(0,-(tempMailbox.getHeight()+100));
+		}
+			
 		mTruckCrashedSprite.setPosition(0,-(mTruckCrashedSprite.getHeight()+100));
 		mCarCrashedSprite.setPosition(0, -(mCarCrashedSprite.getHeight()+100));
 
@@ -371,9 +383,11 @@ public class MainGameScreenActivity extends BaseGameActivity implements IOnMenuI
 					mTruckSprite.setPosition(mTruckPosition, -CAMERA_HEIGHT);
 					dropTheTruck();
 				}
-				if(timeElapsed % (mMailboxSpeed+1) == 0)
+				if(timeElapsed % (mMailboxSpeed+3) == 0)
 				{
-					mMailBoxSprite.setStatesThenDrop();
+					for(int i=0;i<MAILBOX_COUNT;i++){
+						mMailBoxSprites.get(i).setStatesThenDrop(mMailboxSpeed+i,i*500);
+					}
 				}
 			}
 			
@@ -433,8 +447,6 @@ public class MainGameScreenActivity extends BaseGameActivity implements IOnMenuI
 	}
 	private class Road extends AnimatedSprite
 	{
-		private static final float MAILBOX_HIT_AREA_MIN = CAR_YPOSITION+50;
-		private static final float MAILBOX_HIT_AREA_MAX = CAMERA_HEIGHT-100;
 
 
 
@@ -489,14 +501,9 @@ public class MainGameScreenActivity extends BaseGameActivity implements IOnMenuI
 					mCarTiledSprite.setCurrentTileIndex(0);
 				}
 			};
-			if(mCarTiledSprite.collidesWith(mMailBoxSprite) && !mMailBoxSprite.isHit() && 
-					(mMailBoxSprite.getY() > MAILBOX_HIT_AREA_MIN) && (mMailBoxSprite.getY() < MAILBOX_HIT_AREA_MAX))
+			for(int i=0;i<MAILBOX_COUNT;i++)
 			{
-				if(mMailBoxSprite.isEmpty)
-					mScore++;
-				else
-					mStrikeCount++;
-				mMailBoxSprite.setHit(true);
+				mMailBoxSprites.get(i).gotHit();
 			}
 			mScoreKeeper.setText("Score: "+mScore);
 			mStrikeKeeper.setText("Strikes: "+mStrikeCount);
@@ -506,6 +513,8 @@ public class MainGameScreenActivity extends BaseGameActivity implements IOnMenuI
 
 	private class MailBox extends TiledSprite
 	{		
+		private static final float MAILBOX_HIT_AREA_MIN = CAR_YPOSITION+50;
+		private static final float MAILBOX_HIT_AREA_MAX = CAMERA_HEIGHT-100;
 		private boolean isEmpty;
 		private boolean isHit;
 
@@ -513,7 +522,19 @@ public class MainGameScreenActivity extends BaseGameActivity implements IOnMenuI
 			super(-pTiledTextureRegion.getWidth(), -pTiledTextureRegion.getHeight(), pTiledTextureRegion);
 		}
 		
-		public void setStatesThenDrop()
+		public void gotHit() {
+			if(mCarTiledSprite.collidesWith(this) && !this.isHit() && 
+					(this.getY() > MAILBOX_HIT_AREA_MIN) && (this.getY() < MAILBOX_HIT_AREA_MAX))
+			{
+				if(this.isEmpty)
+					mScore++;
+				else
+					mStrikeCount++;
+				this.setHit(true);
+			}
+		}
+
+		public void setStatesThenDrop(float mailBoxSpeed,int yPos)
 		{
 			boolean isOnLeft = (Math.random()>0.4)?true:false;
 			setHit(false);
@@ -528,11 +549,11 @@ public class MainGameScreenActivity extends BaseGameActivity implements IOnMenuI
 			else if(!isOnLeft && isEmpty())
 				this.setCurrentTileIndex(3);
 			
-			drop();
+			drop(mailBoxSpeed,yPos);
 		}
 		
-		private void drop() {
-			this.registerEntityModifier(new MoveYModifier(mMailboxSpeed, -this.getHeight(), CAMERA_HEIGHT));
+		private void drop(float mailBoxSpeed,int yPos) {
+			this.registerEntityModifier(new MoveYModifier(mailBoxSpeed, -(this.getHeight()+yPos), CAMERA_HEIGHT));
 		}
 
 		public boolean isEmpty() {
