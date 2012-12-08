@@ -448,8 +448,6 @@ public class MainGameScreenActivity extends BaseGameActivity implements IOnMenuI
 	private class Road extends AnimatedSprite
 	{
 
-
-
 		public Road(float pX, float pY, TiledTextureRegion pTiledTextureRegion) {
 			super(pX, pY, pTiledTextureRegion);
 			mHandler = new Handler();
@@ -507,7 +505,7 @@ public class MainGameScreenActivity extends BaseGameActivity implements IOnMenuI
 			}
 			mScoreKeeper.setText("Score: "+mScore);
 			mStrikeKeeper.setText("Strikes: "+mStrikeCount);
-			mHandler.postDelayed(carBackToNormalRunnable, 500);
+			mHandler.postDelayed(carBackToNormalRunnable, 200);
 		}
 	}	
 
@@ -527,9 +525,15 @@ public class MainGameScreenActivity extends BaseGameActivity implements IOnMenuI
 					(this.getY() > MAILBOX_HIT_AREA_MIN) && (this.getY() < MAILBOX_HIT_AREA_MAX))
 			{
 				if(this.isEmpty)
+				{
 					mScore++;
+					this.setCurrentTileIndex((this.getX()==MAILBOX_LEFT_POS)?6:7);
+				}
 				else
+				{
 					mStrikeCount++;
+					this.setCurrentTileIndex((this.getX()==MAILBOX_LEFT_POS)?4:5);
+				}
 				this.setHit(true);
 			}
 		}
