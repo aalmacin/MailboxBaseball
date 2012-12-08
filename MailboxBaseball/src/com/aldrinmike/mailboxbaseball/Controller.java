@@ -18,7 +18,7 @@ import android.widget.TextView;
  * 
  * @author Aldrin Jerome Almacin
  *         <p>
- *         <b>Date: </b>November 13, 2012
+ *         <b>Date: </b>December 8, 2012
  *         </p>
  *         <p>
  *         <b>Description: </b>Controller is used to make a connection from the
@@ -43,23 +43,19 @@ public class Controller {
 																		// table
 	public static final String PLAYER_ID = "_id"; // The id that
 															// identifies each
-															// shopping list.
+															// Player name
 	public static final String PLAYER_NAME = "playername"; // The name of
-																// the shopping
-																// list.
-	public static final String PLAYER_SCORE = "score"; // The name of
-	// the shopping
-	// list.
+																// the player.
+	public static final String PLAYER_SCORE = "score"; // The score of the player
 
-	// The SQLite queries that will be used to create the shopping list and
-	// items table
+	// The SQLite query that will be used to create the high score table
 	public static final String HIGH_SCORE_TABLE_QUERY = "CREATE TABLE "
 			+ HIGH_SCORE_TABLE + " (" + PLAYER_ID
 			+ " INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,"
 			+ PLAYER_NAME + " TEXT NOT NULL,"
 			+PLAYER_SCORE+" INTEGER NOT NULL);";
 
-	private Context context; // A copy of the Activity context that is passed as
+	private Context context; // A reference to the Activity context that is used by the controller
 
 	/**
 	 * The constructor of the controller class.
@@ -73,20 +69,22 @@ public class Controller {
 	} // End of Constructor
 
 	/**
-	 * Gets all the shopping lists that the app currently have.
+	 * Gets the top 10 scores stored in the database.
+	 * 
+	 * @return The list of strings that contains both the player name and score.
 	 */
 	public ArrayList<ArrayList<String>> getTop10Scores() {
 		ArrayList<ArrayList<String>> allLists = new ArrayList<ArrayList<String>>();
-		// Open the database and take the values and quantity into a tempCursor.
 		DBAdapter dbHelper = new DBAdapter();
+		// Take the player name and score from the db
 		Cursor tempCursor = dbHelper.openToRead().query(HIGH_SCORE_TABLE, new String[] { PLAYER_ID, PLAYER_NAME,PLAYER_SCORE }, 
 				null, null, null, null, PLAYER_SCORE+" DESC", "10");
 		if (tempCursor.moveToFirst())
 			// Go through each item in the cursor and add the values into the
-			// allItems variable.
+			// allLists variable.
 			while (!tempCursor.isAfterLast()) {
 				ArrayList<String> tempArrayList = new ArrayList<String>();
-				// Take the shopping list name and id.
+				// Take the player name and player score.
 				tempArrayList.add(tempCursor.getString(tempCursor
 						.getColumnIndex(PLAYER_NAME)));
 				tempArrayList.add(tempCursor.getString(tempCursor
@@ -102,42 +100,54 @@ public class Controller {
 		return allLists;
 	} // End of getAllShoppingLists Method
 
+	/**
+	 * Checks if the score given belongs to the top 10.
+	 * 
+	 * @param score The score of the user.
+	 * @return the result of the check.
+	 */
 	public boolean scoreBelongsToTop10(int score) {
-		// Open the database and take the values and quantity into a tempCursor.
+		// Open the database and take the id and score into a tempCursor limit the number of results to 10 and make sure that it is in descending order.
 		DBAdapter dbHelper = new DBAdapter();
 		Cursor tempCursor = dbHelper.openToRead().query(HIGH_SCORE_TABLE, new String[] { PLAYER_ID, PLAYER_SCORE }, 
 				null, null, null, null, PLAYER_SCORE+" DESC", "10");
+		
+		// Initially set the result to false.
 		boolean belongToTop10 = false;
+		// If the result has more than 1, then 
+		// Go through each item in the cursor and check if the current item in the cursor is less than or equal to the new player score.
+		// If it is, then change the value of the result to true
 		if (tempCursor.moveToFirst())
-			// Go through each item in the cursor and add the values into the
-			// allItems variable.
 			while (!tempCursor.isAfterLast()) {
 				if(Integer.parseInt(tempCursor.getString(tempCursor.getColumnIndex(PLAYER_SCORE))) <= score)
-				{
 					belongToTop10 = true;
-				}
 				tempCursor.moveToNext(); // Move to the next item
 			} // End of !tempCursor.isAfterLast() While
 		else
+			// If the cursor is empty (No player scores yet) then the result will be true
 			belongToTop10 = true;
 		tempCursor.close();
 		dbHelper.close();		
 		return belongToTop10;
-	}
+	}// End of scoreBelongsToTop10 method
 
+	/**
+	 * Saves the player and score to the database.
+	 * @param mPlayer The name of the player
+	 * @param mScore The score of the player
+	 */
 	public void savePlayerAndScore(String mPlayer, int mScore) {
-		// Open the database and take the values and quantity into a tempCursor.
-				DBAdapter dbHelper = new DBAdapter();
-				if(mPlayer.length() == 0)
-				{
-					mPlayer = "Player 1";
-				}
-				ContentValues contentValues = new ContentValues();
-				contentValues.put(PLAYER_NAME, mPlayer);
-				contentValues.put(PLAYER_SCORE, mScore);
-				dbHelper.openToWrite().insert(HIGH_SCORE_TABLE, null, contentValues );
-				dbHelper.close();		
-	}
+		DBAdapter dbHelper = new DBAdapter();
+		// If the player didn't gave a name, "Player 1" will be the default name.
+		if(mPlayer.length() == 0)
+			mPlayer = "Player 1";
+		// Save the player name and score to a content values object and insert it to the writable database.
+		ContentValues contentValues = new ContentValues();
+		contentValues.put(PLAYER_NAME, mPlayer);
+		contentValues.put(PLAYER_SCORE, mScore);
+		dbHelper.openToWrite().insert(HIGH_SCORE_TABLE, null, contentValues );
+		dbHelper.close();		
+	} // End of savePlayerAndScore method
 
 	/**
 	 * @author Aldrin Jerome Almacin
@@ -175,10 +185,10 @@ public class Controller {
 		 *         database.
 		 */
 		public SQLiteDatabase openToRead() throws android.database.SQLException {
-			ShoppingListSQLHelper shoppingListSQLHelper = new ShoppingListSQLHelper(
+			DBSQLHelper mSQLHelper = new DBSQLHelper(
 					context, DATABASE_NAME, null, DATABASE_VERSION);
-			// Get the db from the shoppingListSQLHelper
-			db = shoppingListSQLHelper.getReadableDatabase();//test
+			// Get the db from the sqlHelper
+			db = mSQLHelper.getReadableDatabase();//test
 			return db; // Return the db
 		} // End of openToRead Method //test
 
@@ -189,10 +199,10 @@ public class Controller {
 		 */
 		public SQLiteDatabase openToWrite()
 				throws android.database.SQLException {
-			ShoppingListSQLHelper shoppingListSQLHelper = new ShoppingListSQLHelper(
+			DBSQLHelper mSQLHelper = new DBSQLHelper(
 					context, DATABASE_NAME, null, DATABASE_VERSION);
-			// Get the db from the shoppingListSQLHelper
-			db = shoppingListSQLHelper.getWritableDatabase();
+			// Get the db from the sqlHelper
+			db = mSQLHelper.getWritableDatabase();
 			return db; // Return the db
 		} // End of openToWrite Method
 
@@ -201,13 +211,13 @@ public class Controller {
 		 * <b>Date: </b>November 13, 2012
 		 * </p>
 		 * <p>
-		 * <b>Description: </b>ShoppingListSQLHelper that extends the
+		 * <b>Description: </b>DBSQLHelper that extends the
 		 * SQLiteOpenHelper class which helps the access to database easier.
 		 * Database is also created in this class from the queries above.
 		 * </p>
 		 * 
 		 */
-		private class ShoppingListSQLHelper extends SQLiteOpenHelper {
+		private class DBSQLHelper extends SQLiteOpenHelper {
 			/**
 			 * The constructor of the ShoppingListSQLHelper class
 			 * 
@@ -218,7 +228,7 @@ public class Controller {
 			 * @param version
 			 *            The database version
 			 */
-			public ShoppingListSQLHelper(Context context, String name,
+			public DBSQLHelper(Context context, String name,
 					CursorFactory factory, int version) {
 				super(context, name, factory, version);
 			} // End of Constructor

@@ -183,6 +183,9 @@ public class ControlScreenActivity extends BaseGameActivity  implements IOnMenuI
 	@Override
 	public void onLoadComplete() {
 	}
+
+	@Override
+	public void onBackPressed() {}
 	
 	@Override
 	public boolean onMenuItemClicked(MenuScene pMenuScene, IMenuItem pMenuItem,
@@ -247,7 +250,6 @@ public class ControlScreenActivity extends BaseGameActivity  implements IOnMenuI
 				mTextRight.setText(scores);
 			}
 		}
-		
 		
 	}
 	

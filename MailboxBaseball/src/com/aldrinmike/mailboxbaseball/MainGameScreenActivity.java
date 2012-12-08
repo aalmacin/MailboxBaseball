@@ -204,8 +204,7 @@ public class MainGameScreenActivity extends BaseGameActivity implements IOnMenuI
 
 	
 	@Override
-	public void onBackPressed() {
-	}
+	public void onBackPressed() {}
 	
 	private void dropTheTruck() {
 		mTruckSprite.registerEntityModifier(new MoveYModifier(mTruckSpeed, -mTruckSprite.getHeight(), CAMERA_HEIGHT));
