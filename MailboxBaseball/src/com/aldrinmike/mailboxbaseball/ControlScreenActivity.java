@@ -234,7 +234,7 @@ public class ControlScreenActivity extends BaseGameActivity  implements IOnMenuI
 		private void updateTexts() {
 			top10Players = mController.getTop10Scores();
 			if(top10Players == null)
-				mTextLeft.setText("No player played \nthe game yet");
+				mTextLeft.setText("No scores to display");
 			else
 			{
 				String players = "Name\n";
