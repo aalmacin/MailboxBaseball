@@ -44,6 +44,20 @@ import android.os.Handler;
 import android.text.InputFilter;
 import android.widget.EditText;
 
+/**
+ * FileName: MainGameScreenActivity.java
+ * 
+ * @author Aldrin Jerome Almacin
+ *         <p>
+ *         <b>Date: </b>December 8, 2012
+ *         </p>
+ *         <p>
+ *         <b>Description: </b>MainGameScreenActivity is an activity that runs that game.
+ *         The user will play the main game in this activity. When the game stops, due to the user's car getting crashed or by getting 3 strikes,
+ *         an end screen will be shown.
+ *         </p>
+ * 
+ */
 public class MainGameScreenActivity extends BaseGameActivity implements IOnMenuItemClickListener{
 	// The camera width and height
 	private final static int CAMERA_WIDTH = 480;
@@ -652,58 +666,64 @@ public class MainGameScreenActivity extends BaseGameActivity implements IOnMenuI
 		mHitText.setVisible(false);
 	} // End of initializeGameVals method
 
+	/**
+	 * Build the timer used to decide on when to do game events.
+	 */
 	private void buildTimer() {		
 		mTruckTimer = new Timer();
-		mTruckTimerTask = new TimerTask() {			
+		mTruckTimerTask = new TimerTask() {	
+			// Used to count how many seconds have passed.
 			private int timeElapsed;
 			@Override
 			public void run() {
+				// Increment timeElapsed
 				timeElapsed++;
-
+				
+				// Every minute, add minimize the drop speed of the truck and the mailbox if they didn't reached the minimum speed. 
 				if(timeElapsed % 60 == 0 && mTruckSpeed >= 0.5f && mMailboxSpeed >= 0.5f)
 				{
 					mTruckSpeed -= 0.5f;
 					mMailboxSpeed -= 0.5f;
-				}
+				} // End of if
 				
-				if(timeElapsed % 20 == 0){
+				// Every 20 seconds, randomly decide if the golden mailbox should be dropped
+				if(timeElapsed % 20 == 0)
 					if(Math.random()>0.4)
-					{
 						mGoldenMailbox.setStatesThenDrop(mMailboxSpeed, 0);
-					}
-				}
 				
+				// Just a second after a truck is dropped, drop another truck
 				if(timeElapsed % (mTruckSpeed+1) == 0)
 				{
+					// Randomly selects whether the truck is on the right or the left.
 					boolean carLeft = (Math.random()>0.4f);
 					mTruckPosition = (carLeft)?TRUCK_LEFT_POSITION:TRUCK_RIGHT_POSITION;
 					mTruckInRight = (carLeft)?false:true;
 					mTruckSprite.setPosition(mTruckPosition, -CAMERA_HEIGHT);
 					dropTheTruck();
-				}
+				} // End of if
+
+				// Just a after the last mailbox is nowhere to be seen, drop the mailboxes again
 				if(timeElapsed % (mMailboxSpeed+(MAILBOX_COUNT-1)) == 0)
-				{
-					for(int i=0;i<MAILBOX_COUNT;i++){
+					for(int i=0;i<MAILBOX_COUNT;i++)
 						mMailBoxSprites.get(i).setStatesThenDrop(mMailboxSpeed+i,i*500);
-					}
-				}
-			}
-			
-		};
+					
+			} // End of run method			
+		}; // End of TimerTask anonymous inner class
+		
+		// Schedule the truck timer. Give it's task and run the task each second
 		mTruckTimer.schedule(mTruckTimerTask, (long)0, (long)1000);
-	}
-	
-	
+	} // End of buildTimer method	
 	
 	/**
 	 * Anonymous class used by the AlertDialog when the OK button is clicked
 	 */
 	private AlertDialog.OnClickListener saveToDbAlertDialogClickListener = new AlertDialog.OnClickListener() 
 	{
-
-		// When the button is clicked, call the reset method and resume the thread.
+		// When the button is clicked and not cheated, get the playerName given by the user and save it to the database.
+		// If the name given is the cheat code, simply reset the game with the score value not changed.
 		public void onClick(DialogInterface dialog, int which) 
 		{
+			// If empty text is given, "Player 1" would be the default.
 			String mPlayerName = (mHighScorerNameEditText.getText().length() == 0)?"Player 1":mHighScorerNameEditText.getText().toString();
 			// If the user did not enter the cheat code, then save the name of the user and show the end screen.
 			if(!mPlayerName.toUpperCase().equals(CHEAT_CODE.toUpperCase()))
@@ -722,122 +742,228 @@ public class MainGameScreenActivity extends BaseGameActivity implements IOnMenuI
 		} // End of onClick method
 	}; // End of alertDialogResetOnClickListener anonymous inner class
 
+	/**	
+	 * @author Aldrin Jerome Almacin
+	 *         <p>
+	 *         <b>Date: </b>December 9, 2012
+	 *         </p>
+	 *         <p>
+	 *         <b>Description: </b>MailBox is a sub-class of Sprite. MailBox's methods are used for checking whether they get hit by the car,
+	 *         getting dropped, and state checking.
+	 *         </p>
+	 * 
+	 */
 	private class MailBox extends TiledSprite
-	{		
+	{	
+		// The indexes of the mailboxes
+		private static final int LEFT_MAILBOX_NOT_EMPTY = 0;
+		private static final int LEFT_MAILBOX_EMPTY = 1;
+		private static final int RIGHT_MAILBOX_NOT_EMPTY = 2;
+		private static final int RIGHT_MAILBOX_EMPTY = 3;
+		
+		// The limit on where the mailbox can be directly hitted by the batter.
 		protected static final float MAILBOX_HIT_AREA_MIN = CAR_YPOSITION+50;
 		protected static final float MAILBOX_HIT_AREA_MAX = CAMERA_HEIGHT-100;
+		
+		// States whether the mailbox is empty or not
 		private boolean isEmpty;
+		
+		// States whether the mailbox have been hit
 		private boolean isHit;
 
+		/**
+		 * Constructor of the Mailbox object. The x and y though is initially set to negative.
+		 * @param pTiledTextureRegion Overrides TiledSprite(TiledTextureRegion pTiledTextureRegion)
+		 */
 		public MailBox(TiledTextureRegion pTiledTextureRegion) {
 			super(-pTiledTextureRegion.getWidth(), -pTiledTextureRegion.getHeight(), pTiledTextureRegion);
-		}
+		} // End of Constructor
 		
+		/**
+		 * Checks whether the mailbox got hit by the batter.
+		 */
 		public void checkGotHit() {
+			// If this mailbox is hitted and is in the right hit area, then check if this mailbox is empty or not empty.
 			if(mCarTiledSprite.collidesWith(this) && !this.isHit() && 
 					(this.getY() > MAILBOX_HIT_AREA_MIN) && (this.getY() < MAILBOX_HIT_AREA_MAX))
 			{
-				if(this.isEmpty)
+				// Add the score, show the correct index for smashed mailbox, and show "SWEEEET!" in the hit text
+				if(isEmpty)
 				{
 					mScoreCount++;
 					this.setCurrentTileIndex((this.getX()==MAILBOX_LEFT_POS)?6:7);
 					mHitText.setText("SWEEEET!");
 				}
+				// Else, Add the strike count, show the correct index for smashed mailbox, and show "STRIKE!!" in the hit text
 				else
 				{
 					mStrikeCount++;
 					this.setCurrentTileIndex((this.getX()==MAILBOX_LEFT_POS)?4:5);
 					mHitText.setText("STRIKE!!");
-				}
+				} // End if-else
+				
+				// Set the hit state to true
 				this.setHit(true);
+				
+				// Show the hitText
 				mHitText.setVisible(true);
+				
+				// Then hide the hitText after a second
 				mHandler.postDelayed(hideTheHitText, 1000);
-			}
-		}
+			} // End of if
+		} // End of checkGotHit method
+		
+		/**
+		 * Hides the hitText
+		 */
 		protected Runnable hideTheHitText = new Runnable() {
 			
 			@Override
 			public void run() {
 				mHitText.setVisible(false);
-			}
-		};
+			} // End of run method
+		}; // End of Runnable anonymous inner class
+		
+		/**
+		 * Set the states of the box then drop
+		 * 
+		 * @param mailBoxSpeed The drop speed of the mailbox
+		 * @param yPos The position/distance of the mailbox to the mailbox in front of it.
+		 */
 		public void setStatesThenDrop(float mailBoxSpeed,float yPos)
 		{
+			// Randomly set if the mailbox is on the left/right
 			boolean isOnLeft = (Math.random()>0.4)?true:false;
-			setHit(false);
-			setEmpty((Math.random()>0.4)?true:false);
-			this.setPosition((isOnLeft)?MAILBOX_LEFT_POS:MAILBOX_RIGHT_POS, -this.getHeight());
-			if(isOnLeft && isEmpty())
-				this.setCurrentTileIndex(1);
-			else if(isOnLeft && !isEmpty())
-				this.setCurrentTileIndex(0);
-			else if(!isOnLeft && !isEmpty())
-				this.setCurrentTileIndex(2);
-			else if(!isOnLeft && isEmpty())
-				this.setCurrentTileIndex(3);
 			
+			// Set the hit to false.
+			setHit(false);
+			
+			// Set the empty state randomly
+			setEmpty((Math.random()>0.4)?true:false);
+			
+			// Set the position of the mailbox base on the random decision.
+			this.setPosition((isOnLeft)?MAILBOX_LEFT_POS:MAILBOX_RIGHT_POS, -this.getHeight());
+			
+			// Set the correct tile index of the mailboxes
+			if(isOnLeft && isEmpty())
+				this.setCurrentTileIndex(LEFT_MAILBOX_EMPTY);
+			else if(isOnLeft && !isEmpty())
+				this.setCurrentTileIndex(LEFT_MAILBOX_NOT_EMPTY);
+			else if(!isOnLeft && !isEmpty())
+				this.setCurrentTileIndex(RIGHT_MAILBOX_NOT_EMPTY);
+			else if(!isOnLeft && isEmpty())
+				this.setCurrentTileIndex(RIGHT_MAILBOX_EMPTY);
+			
+			// Drop the mailbox
 			drop(mailBoxSpeed,yPos);
-		}
+		} // End of setStatesThenDrop method
 		
+		/**
+		 * Drop the mailbox using the move y modifier
+		 * 
+		 * @param mailBoxSpeed The drop speed of the mailbox
+		 * @param yPos The position/distance of the mailbox to the mailbox in front of it.
+		 */
 		protected void drop(float mailBoxSpeed,float yPos) {
 			this.registerEntityModifier(new MoveYModifier(mailBoxSpeed, -(this.getHeight()+yPos), CAMERA_HEIGHT));
-		}
+		} // End of drop method
 
+		/**
+		 * 
+		 * @return state empty
+		 */
 		public boolean isEmpty() {
 			return isEmpty;
-		}
+		} // End of getter
 
+		/**
+		 * 
+		 * @param isEmpty new state of empty
+		 */
 		public void setEmpty(boolean isEmpty) {
 			this.isEmpty = isEmpty;
-		}
+		} // End of setter
 
+		/**
+		 * 
+		 * @return state of hit
+		 */
 		public boolean isHit() {
 			return isHit;
-		}
+		} // End of getter
 
+		/**
+		 * 
+		 * @param isHit new state of hit
+		 */
 		public void setHit(boolean isHit) {
 			this.isHit = isHit;
-		}
-		
-	}
+		} // End of setter
+	} // End of MailBox class
 	
+	/**
+	 * @author Aldrin Jerome Almacin
+	 *         <p>
+	 *         <b>Date: </b>December 9, 2012
+	 *         </p>
+	 *         <p>
+	 *         <b>Description: </b>GoldenMailBox is a sub-class of Mailbox. The only difference is that when the golden mailbox is hitted,
+	 *         the score is higher and the animation is different.
+	 *         </p>
+	 * 
+	 */
 	private class GoldenMailbox extends MailBox
 	{
-
+		/**
+		 * Constructor of the GoldenMailbox
+		 * 
+		 * @param pTiledTextureRegion Overrides MailBox(TiledTextureRegion pTiledTextureRegion)
+		 */
 		public GoldenMailbox(TiledTextureRegion pTiledTextureRegion) {
-			super(pTiledTextureRegion);}
+			super(pTiledTextureRegion);
+		} // End of Constructor
 
 		@Override
 		public void checkGotHit() {
+			// If this mailbox is hitted and is in the right hit area
 			if(mCarTiledSprite.collidesWith(this) && !this.isHit() && 
 					(this.getY() > MAILBOX_HIT_AREA_MIN) && (this.getY() < MAILBOX_HIT_AREA_MAX))
 			{
+				// Set the hit text's text to "YEAA!!!!"
 				mHitText.setText("YEAA!!!!");
+				
+				// Add 10 to the score count
 				mScoreCount += 10;
+				
+				// Remove all entity modifiers this object currently have.
 				this.clearEntityModifiers();
-				startHomeRunAnimation();
+
+				// Rotate and make the mailbox fly.
+				this.registerEntityModifier(new MoveXModifier(2, this.getX(), (getX()==MAILBOX_LEFT_POS)?-this.getWidth():CAMERA_WIDTH));
+				this.registerEntityModifier(new MoveYModifier(2, this.getY(), -this.getHeight()));
+				this.registerEntityModifier(new RotationModifier(4, this.getRotation(), 450));
+				
+				// Show the hitText
 				mHitText.setVisible(true);
+				// Then hide it after a second
 				mHandler.postDelayed(hideTheHitText, 1000);
-			}
-		}
-		
-		private void startHomeRunAnimation() {
-			this.registerEntityModifier(new MoveXModifier(2, this.getX(), (getX()==MAILBOX_LEFT_POS)?-this.getWidth():CAMERA_WIDTH));
-			this.registerEntityModifier(new MoveYModifier(2, this.getY(), -this.getHeight()));
-			this.registerEntityModifier(new RotationModifier(4, this.getRotation(), 450));
-		}
+			} // End of if
+		} // End of checkGotHit method
 
 		@Override
 		public void setStatesThenDrop(float mailBoxSpeed, float yPos) {
+			// Randomly set the mailbox's position
 			boolean isOnLeft = (!mTruckInRight)?true:false;
 			this.setPosition((isOnLeft)?MAILBOX_LEFT_POS:MAILBOX_RIGHT_POS, -this.getHeight());
+			
+			// Set the appropriate image index base on the position
 			if(isOnLeft)
 				this.setCurrentTileIndex(0);
 			else
 				this.setCurrentTileIndex(1);
 			
+			// Drop the mailbox
 			drop(mailBoxSpeed,yPos);
-		}
-		
-	}
-}
+		} // End of setStatesThenDrop method		
+	} // End of GoldenMailbox class
+} // End of MainGameScreenActivity class
