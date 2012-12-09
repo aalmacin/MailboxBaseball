@@ -46,54 +46,88 @@ import android.widget.EditText;
 
 public class MainGameScreenActivity extends BaseGameActivity implements IOnMenuItemClickListener{
 
+	// The camera width and height
 	private final static int CAMERA_WIDTH = 480;
 	private final static int CAMERA_HEIGHT = 800;
 
+	// Car positions.
 	private static final int CAR_LEFT_POSITION = 50;
-	private static final int CAR_RIGHT_POSITION = 200;
+	private static final int CAR_RIGHT_POSITION = 200;	
+	private static final int CAR_YPOSITION = CAMERA_HEIGHT-300;	
+	
+	// Truck positions.
 	private static final int TRUCK_LEFT_POSITION = CAR_LEFT_POSITION + 50;
 	private static final int TRUCK_RIGHT_POSITION = CAR_RIGHT_POSITION + 40;
-	private static final int CAR_YPOSITION = CAMERA_HEIGHT-300;	
+	
+	// Mailbox positions.
 	private static final int MAILBOX_LEFT_POS = CAR_LEFT_POSITION - 30;
 	private static final int MAILBOX_RIGHT_POS = CAR_RIGHT_POSITION + 200;
-	private static final int MENU_PLAY_AGAIN = 4;
-	private static final int MENU_EXIT_TO_MAIN_MENU = 5;
-	private static final float GAME_OVER_X = 150;
-	private static final float GAME_OVER_Y = 200;
-	private static final int MAILBOX_COUNT = 3;
+	
+	// Menu item ids
+	private static final int MENU_PLAY_AGAIN = 0;
+	private static final int MENU_EXIT_TO_MAIN_MENU = 1;
+	
+	// The position of the game over score and the hit text
+	private static final float SCORE_AND_HIT_TEXT_X = 150;
+	private static final float SCORE_AND_HIT_TEXT_Y = 200;
+	
+	// The number of mailbox in the screen
+	private static final int MAILBOX_COUNT = 4;
+	
+	// A reference to the game camera.
 	private Camera mCamera;
-	private AnimatedSprite mTruckCrashedSprite;
-	private AnimatedSprite mCarCrashedSprite;
-	private Sprite mTruckSprite;
-	private ChangeableText mStrikeKeeper;
-	private ChangeableText mScoreKeeper;
+
+	// Font used by the end score and game over menu.
+	private Font mFont;
+	
+	// Font used when keeping track of scores.
+	private Font mScoreFont;
+	
+	// The font used by the text that tells the user when an item is hit.
+	private Font mHitTextFont;
+	
 	private Scene mMainScene;
 	private Scene mGameScene;
-	private String mPlayer;
-	private int mScore;
-	private int mStrikeCount;
-	private Font mScoreFont;
-	private TiledSprite mCarTiledSprite;
-	private ArrayList<MailBox> mMailBoxSprites;
-	private Road mRoadTiledSprite;
-	private Timer mTruckTimer;
-	private int mTruckPosition;
-	private boolean mTruckInRight;
-	private boolean mCarInRight;
-	private TimerTask mTruckTimerTask;	
-	private Handler mHandler;
-	private EditText mHighScorerName;
-	private AlertDialog mSaveHighScoreAlertDialog;
 	private MenuScene mGameOverMenuScene;
+	
+	// The road in which the car and truck drives in
+	private AnimatedSprite mRoadTiledSprite;	
+	
+	// The list of mailboxes and golden mailbox
+	private ArrayList<MailBox> mMailBoxSprites;
+	private GoldenMailbox mGoldenMailbox;
+
+	private TiledSprite mCarTiledSprite;
+	private AnimatedSprite mCarCrashedSprite;
+	
+	private Sprite mTruckSprite;
+	private AnimatedSprite mTruckCrashedSprite;
+	
 	private Sprite mGameOverMenuSprite;
-	private Font mFont;
+	
+	private Timer mTruckTimer;
+	private TimerTask mTruckTimerTask;	
+	
+	private Handler mHandler;
+	
 	private Controller mController;
+
+	private int mScoreCount;
+	private int mStrikeCount;
+	private int mTruckPosition;
 	private float mTruckSpeed;
 	private float mMailboxSpeed;
+	private boolean mTruckInRight;
+	private boolean mCarInRight;
+	
+	private EditText mHighScorerName;
+
+	private ChangeableText mStrikeKeeper;
+	private ChangeableText mScoreKeeper;
 	private ChangeableText mGameOverScoreText;
-	private GoldenMailbox mGoldenMailbox;
 	private ChangeableText mHitText;
-	private Font mHitTextFont;
+	
+	private AlertDialog mSaveHighScoreAlertDialog;
 
 	@Override
 	public Engine onLoadEngine() {
@@ -112,7 +146,7 @@ public class MainGameScreenActivity extends BaseGameActivity implements IOnMenuI
 		mEngine.getFontManager().loadFont(mScoreFont);
 
 		Texture mHitTextFontTexture = new Texture(256, 256,TextureOptions.BILINEAR_PREMULTIPLYALPHA);
-		this.mHitTextFont = FontFactory.createFromAsset(mHitTextFontTexture, this, "Magenta_BBT.ttf", 70, true, Color.rgb(210,105,30));
+		this.mHitTextFont = FontFactory.createFromAsset(mHitTextFontTexture, this, "Magenta_BBT.ttf", 68, true, Color.YELLOW);
 		this.mEngine.getTextureManager().loadTexture(mHitTextFontTexture);
 		this.mEngine.getFontManager().loadFont(this.mHitTextFont);
 		
@@ -148,7 +182,65 @@ public class MainGameScreenActivity extends BaseGameActivity implements IOnMenuI
 				0, 0, 3, 1);
 		mEngine.getTextureManager().loadTexture(mRoadTiledTexture);
 		
-		mRoadTiledSprite = new Road(0, 0, mRoadTiledTextureRegion);
+		mRoadTiledSprite = new AnimatedSprite(0, 0, mRoadTiledTextureRegion){
+
+			
+			
+			@Override
+			public boolean onAreaTouched(TouchEvent pSceneTouchEvent,
+					float pTouchAreaLocalX, float pTouchAreaLocalY) {
+				if(pTouchAreaLocalX < CAMERA_WIDTH/2)
+				{
+					if(mCarInRight)
+					{
+						mCarTiledSprite.setCurrentTileIndex(0);
+						mCarTiledSprite.setPosition(CAR_LEFT_POSITION, mCarTiledSprite.getY());
+					}
+					else
+					{
+						mCarTiledSprite.setCurrentTileIndex(1);
+						hitBat();					
+					}
+					mCarInRight = false;
+				}
+				else
+				{
+					if(!mCarInRight)
+					{
+						mCarTiledSprite.setCurrentTileIndex(0);
+						mCarTiledSprite.setPosition(CAR_RIGHT_POSITION, mCarTiledSprite.getY());
+					}
+					else
+					{
+						mCarTiledSprite.setCurrentTileIndex(2);
+						hitBat();
+					}
+					mCarInRight = true;
+				}
+				return super
+						.onAreaTouched(pSceneTouchEvent, pTouchAreaLocalX, pTouchAreaLocalY);
+			}
+			
+
+
+			private void hitBat() {
+				Runnable carBackToNormalRunnable = new Runnable() {
+					
+					@Override
+					public void run() {
+						mCarTiledSprite.setCurrentTileIndex(0);
+					}
+				};
+				for(int i=0;i<MAILBOX_COUNT;i++)
+				{
+					mMailBoxSprites.get(i).checkGotHit();
+				}
+				mGoldenMailbox.checkGotHit();
+				mScoreKeeper.setText("Score: "+mScoreCount);
+				mStrikeKeeper.setText("Strikes: "+mStrikeCount);
+				mHandler.postDelayed(carBackToNormalRunnable, 100);
+			}
+		};
 		mRoadTiledSprite.animate(300);
 
 		Texture mTruckTexture = new Texture(1024,1024,TextureOptions.BILINEAR_PREMULTIPLYALPHA);
@@ -176,7 +268,7 @@ public class MainGameScreenActivity extends BaseGameActivity implements IOnMenuI
 		mScoreKeeper = new ChangeableText(5, 5, mScoreFont, "Score: 0     ");
 		mStrikeKeeper = new ChangeableText(mScoreKeeper.getX(), mScoreKeeper.getY()+mScoreKeeper.getHeight()+15, mScoreFont, "Strikes: 0     ");
 		
-		mGameOverScoreText = new ChangeableText(GAME_OVER_X, GAME_OVER_Y, mFont, "Score: NONENONENONE");
+		mGameOverScoreText = new ChangeableText(SCORE_AND_HIT_TEXT_X, SCORE_AND_HIT_TEXT_Y, mFont, "Score: NONENONENONE");
 		
 		Texture mGoldenMailBoxTiledTexture = new Texture(1024, 1024, TextureOptions.BILINEAR_PREMULTIPLYALPHA);
 		TiledTextureRegion mGoldenMailBoxTiledTextureRegion = TextureRegionFactory.createTiledFromAsset(mGoldenMailBoxTiledTexture, this, "gfx/goldenMailbox.png", 
@@ -184,7 +276,7 @@ public class MainGameScreenActivity extends BaseGameActivity implements IOnMenuI
 		mEngine.getTextureManager().loadTexture(mGoldenMailBoxTiledTexture);
 		mGoldenMailbox = new GoldenMailbox(mGoldenMailBoxTiledTextureRegion);
 		
-		mHitText = new ChangeableText(GAME_OVER_X, GAME_OVER_Y, mHitTextFont, "12345678");
+		mHitText = new ChangeableText(SCORE_AND_HIT_TEXT_X, SCORE_AND_HIT_TEXT_Y, mHitTextFont, "12345678");
 	}
 
 	@Override
@@ -225,7 +317,6 @@ public class MainGameScreenActivity extends BaseGameActivity implements IOnMenuI
 			float pMenuItemLocalX, float pMenuItemLocalY) {
 		switch (pMenuItem.getID()) {
 		case MENU_PLAY_AGAIN:
-			mGameOverMenuScene.setVisible(false);
 			mMainScene.setChildScene(mGameScene);
 			resetGame();
 			return true;
@@ -246,6 +337,7 @@ public class MainGameScreenActivity extends BaseGameActivity implements IOnMenuI
 	private void createGameScene()
 	{
 		initializeGameVals();
+		mHandler = new Handler();
 		mHighScorerName = new EditText(this);
 		mHighScorerName.setHint("0 - 10 characters.");
 		mHighScorerName.setFilters(new InputFilter[] { new InputFilter.LengthFilter(10)});
@@ -281,33 +373,31 @@ public class MainGameScreenActivity extends BaseGameActivity implements IOnMenuI
 			
 			@Override
 			public void onUpdate(float pSecondsElapsed) {
-				Runnable showHighScoreAddScreen = new Runnable() {
+				Runnable showScoreRunnable = new Runnable() {
 
 					@Override
 					public void run() {
-						mScore -= mStrikeCount;
-						mGameOverScoreText.setText("Score: "+mScore);
-						if(mController.scoreBelongsToTop10(mScore) && mScore > 0){
+						mGameOverScoreText.setText("Score: "+mScoreCount);
+						if(mController.scoreBelongsToTop10(mScoreCount) && mScoreCount > 0){
 							mSaveHighScoreAlertDialog.setMessage(getDialogMessage());
 							mSaveHighScoreAlertDialog.show();
 						}
 						else
 						{
 							mMainScene.setChildScene(mGameOverMenuScene);
-							mGameOverMenuScene.setVisible(true);
 						}
 					}
 
 					private CharSequence getDialogMessage() {
 						return "Congrats, your score made it to the top 10." +
-								"\n Score: "+mScore +
+								"\n Score: "+mScoreCount +
 								"\n Enter your name:";
 					}
 				};
 				if(mStrikeCount == 3)
 				{
 					stopTheWorld();
-					mHandler.post(showHighScoreAddScreen);
+					mHandler.post(showScoreRunnable);
 				}
 				if(mTruckSprite.collidesWith(mCarTiledSprite) && mTruckSprite.getY() < CAMERA_HEIGHT-10){
 					if(mCarInRight == mTruckInRight)
@@ -343,7 +433,7 @@ public class MainGameScreenActivity extends BaseGameActivity implements IOnMenuI
 						mTruckCrashedSprite.registerEntityModifier(new RotationModifier(3, 0, mTruckCrashedSprite.getRotation()+degCounter/3));
 						mCarCrashedSprite.registerEntityModifier(new RotationModifier(3, 0, mCarCrashedSprite.getRotation()+degCounter));
 						mCarCrashedSprite.registerEntityModifier(new MoveXModifier(3, xCarOrigin, mCarCrashedSprite.getX()+xPosCounter));
-						mHandler.postDelayed(showHighScoreAddScreen,1500);
+						mHandler.postDelayed(showScoreRunnable,1500);
 					}
 				}
 			}
@@ -351,11 +441,11 @@ public class MainGameScreenActivity extends BaseGameActivity implements IOnMenuI
 	}
 	private void initializeGameVals() {
 		mCarInRight = true;
-		mScore = 0;
+		mScoreCount = 0;
 		mStrikeCount = 0;
 		mTruckSpeed = 5;
 		mMailboxSpeed = 4;
-		mScoreKeeper.setText("Score: "+mScore);
+		mScoreKeeper.setText("Score: "+mScoreCount);
 		mStrikeKeeper.setText("Strikes: "+mStrikeCount);
 		mHitText.setVisible(false);
 	}
@@ -413,7 +503,7 @@ public class MainGameScreenActivity extends BaseGameActivity implements IOnMenuI
 					mTruckSprite.setPosition(mTruckPosition, -CAMERA_HEIGHT);
 					dropTheTruck();
 				}
-				if(timeElapsed % (mMailboxSpeed+3) == 0)
+				if(timeElapsed % (mMailboxSpeed+(MAILBOX_COUNT-1)) == 0)
 				{
 					for(int i=0;i<MAILBOX_COUNT;i++){
 						mMailBoxSprites.get(i).setStatesThenDrop(mMailboxSpeed+i,i*500);
@@ -448,10 +538,9 @@ public class MainGameScreenActivity extends BaseGameActivity implements IOnMenuI
 		// When the button is clicked, call the reset method and resume the thread.
 		public void onClick(DialogInterface dialog, int which) 
 		{
-			mPlayer = (mHighScorerName.getText().length() == 0)?"Player 1":mHighScorerName.getText().toString();
-			mController.savePlayerAndScore(mPlayer,mScore);
+			String mPlayerName = (mHighScorerName.getText().length() == 0)?"Player 1":mHighScorerName.getText().toString();
+			mController.savePlayerAndScore(mPlayerName,mScoreCount);
 			mMainScene.setChildScene(mGameOverMenuScene);
-			mGameOverMenuScene.setVisible(true);
 		} // End of onClick method
 	}; // End of alertDialogResetOnClickListener anonymous inner class
 
@@ -473,72 +562,7 @@ public class MainGameScreenActivity extends BaseGameActivity implements IOnMenuI
 		this.mGameOverMenuScene.setBackgroundEnabled(false);
 		this.mGameOverMenuScene.setOnMenuItemClickListener(this);
 		this.mGameOverMenuScene.setPosition(mGameOverMenuScene.getInitialX(), mGameOverMenuScene.getInitialY() + 70);
-		mGameOverMenuScene.setVisible(false);
 	}
-	private class Road extends AnimatedSprite
-	{
-
-		public Road(float pX, float pY, TiledTextureRegion pTiledTextureRegion) {
-			super(pX, pY, pTiledTextureRegion);
-			mHandler = new Handler();
-		}
-		
-		
-		@Override
-		public boolean onAreaTouched(TouchEvent pSceneTouchEvent,
-				float pTouchAreaLocalX, float pTouchAreaLocalY) {
-			if(pTouchAreaLocalX < CAMERA_WIDTH/2)
-			{
-				if(mCarInRight)
-				{
-					mCarTiledSprite.setCurrentTileIndex(0);
-					mCarTiledSprite.setPosition(CAR_LEFT_POSITION, mCarTiledSprite.getY());
-				}
-				else
-				{
-					mCarTiledSprite.setCurrentTileIndex(1);
-					hitBat();					
-				}
-				mCarInRight = false;
-			}
-			else
-			{
-				if(!mCarInRight)
-				{
-					mCarTiledSprite.setCurrentTileIndex(0);
-					mCarTiledSprite.setPosition(CAR_RIGHT_POSITION, mCarTiledSprite.getY());
-				}
-				else
-				{
-					mCarTiledSprite.setCurrentTileIndex(2);
-					hitBat();
-				}
-				mCarInRight = true;
-			}
-			return super
-					.onAreaTouched(pSceneTouchEvent, pTouchAreaLocalX, pTouchAreaLocalY);
-		}
-		
-
-
-		private void hitBat() {
-			Runnable carBackToNormalRunnable = new Runnable() {
-				
-				@Override
-				public void run() {
-					mCarTiledSprite.setCurrentTileIndex(0);
-				}
-			};
-			for(int i=0;i<MAILBOX_COUNT;i++)
-			{
-				mMailBoxSprites.get(i).checkGotHit();
-			}
-			mGoldenMailbox.checkGotHit();
-			mScoreKeeper.setText("Score: "+mScore);
-			mStrikeKeeper.setText("Strikes: "+mStrikeCount);
-			mHandler.postDelayed(carBackToNormalRunnable, 200);
-		}
-	}	
 
 	private class MailBox extends TiledSprite
 	{		
@@ -559,7 +583,7 @@ public class MainGameScreenActivity extends BaseGameActivity implements IOnMenuI
 			{
 				if(this.isEmpty)
 				{
-					mScore++;
+					mScoreCount++;
 					this.setCurrentTileIndex((this.getX()==MAILBOX_LEFT_POS)?6:7);
 					mHitText.setText("SWEEEET!");
 				}
@@ -632,8 +656,8 @@ public class MainGameScreenActivity extends BaseGameActivity implements IOnMenuI
 			if(mCarTiledSprite.collidesWith(this) && !this.isHit() && 
 					(this.getY() > MAILBOX_HIT_AREA_MIN) && (this.getY() < MAILBOX_HIT_AREA_MAX))
 			{
-				mHitText.setText("HOMERUN!");
-				mScore+=10;
+				mHitText.setText("YEAA!!!!");
+				mScoreCount += 10;
 				this.clearEntityModifiers();
 				startHomeRunAnimation();
 				mHitText.setVisible(true);
