@@ -2,6 +2,7 @@ package com.aldrinmike.mailboxbaseball;
 
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.Locale;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -35,6 +36,7 @@ import org.anddev.andengine.opengl.texture.region.TextureRegion;
 import org.anddev.andengine.opengl.texture.region.TextureRegionFactory;
 import org.anddev.andengine.opengl.texture.region.TiledTextureRegion;
 import org.anddev.andengine.ui.activity.BaseGameActivity;
+import org.apache.http.util.LangUtils;
 
 import android.app.AlertDialog;
 import android.content.DialogInterface;
@@ -49,6 +51,8 @@ public class MainGameScreenActivity extends BaseGameActivity implements IOnMenuI
 	// The camera width and height
 	private final static int CAMERA_WIDTH = 480;
 	private final static int CAMERA_HEIGHT = 800;
+	
+	private static final String CHEAT_CODE = "SIAKOL";
 
 	// Car positions.
 	private static final int CAR_LEFT_POSITION = 50;
@@ -120,7 +124,7 @@ public class MainGameScreenActivity extends BaseGameActivity implements IOnMenuI
 	private boolean mTruckInRight;
 	private boolean mCarInRight;
 	
-	private EditText mHighScorerName;
+	private EditText mHighScorerNameEditText;
 
 	private ChangeableText mStrikeKeeper;
 	private ChangeableText mScoreKeeper;
@@ -128,6 +132,7 @@ public class MainGameScreenActivity extends BaseGameActivity implements IOnMenuI
 	private ChangeableText mHitText;
 	
 	private AlertDialog mSaveHighScoreAlertDialog;
+	private boolean mCheated;
 
 	@Override
 	public Engine onLoadEngine() {
@@ -338,9 +343,9 @@ public class MainGameScreenActivity extends BaseGameActivity implements IOnMenuI
 	{
 		initializeGameVals();
 		mHandler = new Handler();
-		mHighScorerName = new EditText(this);
-		mHighScorerName.setHint("0 - 10 characters.");
-		mHighScorerName.setFilters(new InputFilter[] { new InputFilter.LengthFilter(10)});
+		mHighScorerNameEditText = new EditText(this);
+		mHighScorerNameEditText.setHint("0 - 10 characters.");
+		mHighScorerNameEditText.setFilters(new InputFilter[] { new InputFilter.LengthFilter(10)});
 		
 		mHitText.setPosition((CAMERA_WIDTH/2)-(mHitText.getWidth()/2), 100);
 		
@@ -441,12 +446,16 @@ public class MainGameScreenActivity extends BaseGameActivity implements IOnMenuI
 	}
 	private void initializeGameVals() {
 		mCarInRight = true;
-		mScoreCount = 0;
-		mStrikeCount = 0;
+		// If the player did not use a cheat code, reset the score.
+		if(!mCheated)
+		{
+			mScoreCount = 0;
+			mScoreKeeper.setText("Score: "+mScoreCount);
+			mStrikeKeeper.setText("Strikes: "+mStrikeCount);
+		}
 		mTruckSpeed = 5;
 		mMailboxSpeed = 4;
-		mScoreKeeper.setText("Score: "+mScoreCount);
-		mStrikeKeeper.setText("Strikes: "+mStrikeCount);
+		mStrikeCount = 0;
 		mHitText.setVisible(false);
 	}
 
@@ -520,7 +529,7 @@ public class MainGameScreenActivity extends BaseGameActivity implements IOnMenuI
 		// Get the AlertDialog Builder class and save it in a variable.
 		AlertDialog.Builder saveAlertDialogBuilder = new AlertDialog.Builder(this);
 		saveAlertDialogBuilder.setTitle("High Score:");
-		saveAlertDialogBuilder.setView(mHighScorerName);
+		saveAlertDialogBuilder.setView(mHighScorerNameEditText);
 		saveAlertDialogBuilder.setPositiveButton("Save", saveToDbAlertDialogClickListener);
 		saveAlertDialogBuilder.setCancelable(false);
 		
@@ -538,9 +547,21 @@ public class MainGameScreenActivity extends BaseGameActivity implements IOnMenuI
 		// When the button is clicked, call the reset method and resume the thread.
 		public void onClick(DialogInterface dialog, int which) 
 		{
-			String mPlayerName = (mHighScorerName.getText().length() == 0)?"Player 1":mHighScorerName.getText().toString();
-			mController.savePlayerAndScore(mPlayerName,mScoreCount);
-			mMainScene.setChildScene(mGameOverMenuScene);
+			String mPlayerName = (mHighScorerNameEditText.getText().length() == 0)?"Player 1":mHighScorerNameEditText.getText().toString();
+			// If the user did not enter the cheat code, then save the name of the user and show the end screen.
+			if(!mPlayerName.toUpperCase().equals(CHEAT_CODE.toUpperCase()))
+			{
+				mCheated = false;
+				mController.savePlayerAndScore(mPlayerName,mScoreCount);
+				mMainScene.setChildScene(mGameOverMenuScene);
+			}
+			else
+			{
+				// If the user entered the cheat code, then start the game again with the score not resetted
+				mCheated = true;
+				mMainScene.setChildScene(mGameScene);
+				resetGame();
+			}
 		} // End of onClick method
 	}; // End of alertDialogResetOnClickListener anonymous inner class
 
