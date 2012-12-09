@@ -65,6 +65,9 @@ public class ControlScreenActivity extends BaseGameActivity  implements IOnMenuI
 	private final static int MENU_HIGHSCORES = 2;
 	private final static int MENU_EXIT = 3;
 	
+	// The margin of the menu items
+	private static final int MENU_MARGIN = 60;
+	
 	// The x position of the back button
 	private static final float BACK_BUTTON_X = 20;
 	
@@ -176,27 +179,31 @@ public class ControlScreenActivity extends BaseGameActivity  implements IOnMenuI
 		final IMenuItem startMenuItem = new ColorMenuItemDecorator(
 				new TextMenuItem(MENU_START, mFont, "Start"), 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
 		startMenuItem.setBlendFunction(GL10.GL_SRC_ALPHA, GL10.GL_ONE_MINUS_SRC_ALPHA);
-		this.mMainMenuScene.addMenuItem(startMenuItem);
+		mMainMenuScene.addMenuItem(startMenuItem);
 		
 		final IMenuItem helpMenuItem = new ColorMenuItemDecorator(
 				new TextMenuItem(MENU_HELP, mFont, "Help"), 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
 		helpMenuItem.setBlendFunction(GL10.GL_SRC_ALPHA, GL10.GL_ONE_MINUS_SRC_ALPHA);
-		this.mMainMenuScene.addMenuItem(helpMenuItem);
+		mMainMenuScene.addMenuItem(helpMenuItem);
 		
 		final IMenuItem highScoreMenuItem = new ColorMenuItemDecorator(
 				new TextMenuItem(MENU_HIGHSCORES, mFont, "High Scores"), 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
 		highScoreMenuItem.setBlendFunction(GL10.GL_SRC_ALPHA, GL10.GL_ONE_MINUS_SRC_ALPHA);
-		this.mMainMenuScene.addMenuItem(highScoreMenuItem);
+		mMainMenuScene.addMenuItem(highScoreMenuItem);
 		
 		final IMenuItem exitMenuItem = new ColorMenuItemDecorator(
 				new TextMenuItem(MENU_EXIT, mFont, "Exit"), 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
 		exitMenuItem.setBlendFunction(GL10.GL_SRC_ALPHA, GL10.GL_ONE_MINUS_SRC_ALPHA);
-		this.mMainMenuScene.addMenuItem(exitMenuItem);		
+		mMainMenuScene.addMenuItem(exitMenuItem);		
 		
-		this.mMainMenuScene.buildAnimations();
-		this.mMainMenuScene.setBackgroundEnabled(false);
-		this.mMainMenuScene.setOnMenuItemClickListener(this);
-		this.mMainMenuScene.setPosition(mMainMenuScene.getInitialX(), mMainMenuScene.getInitialY() + 90);
+		mMainMenuScene.buildAnimations();
+		mMainMenuScene.setBackgroundEnabled(false);
+		mMainMenuScene.setOnMenuItemClickListener(this);
+		startMenuItem.setPosition(startMenuItem.getX(), (CAMERA_HEIGHT/2)-18);
+		helpMenuItem.setPosition(helpMenuItem.getX(), startMenuItem.getY() + MENU_MARGIN);
+		highScoreMenuItem.setPosition(highScoreMenuItem.getX(), helpMenuItem.getY() + MENU_MARGIN);
+		exitMenuItem.setPosition(exitMenuItem.getX(), highScoreMenuItem.getY() + MENU_MARGIN);
+//		this.mMainMenuScene.setPosition(mMainMenuScene.getInitialX(), mMainMenuScene.getInitialY() + 90);
 	}
 
 	private void createHelpScreen() {
@@ -249,7 +256,7 @@ public class ControlScreenActivity extends BaseGameActivity  implements IOnMenuI
 	{
 		private static final int HIGH_SCORE_X = 300;
 
-		private static final String EMPTY_CHANGEABLE_INITIAL = "Empty text" +
+		private static final String EMPTY_CHANGEABLE_INITIAL = "" +
 				"                                                             " +
 				"                                                             ";
 		
@@ -275,7 +282,7 @@ public class ControlScreenActivity extends BaseGameActivity  implements IOnMenuI
 		private void updateTexts() {
 			top10Players = mController.getTop10Scores();
 			if(top10Players == null)
-				mTextLeft.setText("No scores to display");
+				mTextLeft.setText("No scores to \ndisplay yet.");
 			else
 			{
 				String players = "Name\n";
