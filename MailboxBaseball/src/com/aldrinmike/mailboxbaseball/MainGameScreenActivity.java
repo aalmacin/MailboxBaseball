@@ -2,7 +2,6 @@ package com.aldrinmike.mailboxbaseball;
 
 import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.Locale;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -36,7 +35,6 @@ import org.anddev.andengine.opengl.texture.region.TextureRegion;
 import org.anddev.andengine.opengl.texture.region.TextureRegionFactory;
 import org.anddev.andengine.opengl.texture.region.TiledTextureRegion;
 import org.anddev.andengine.ui.activity.BaseGameActivity;
-import org.apache.http.util.LangUtils;
 
 import android.app.AlertDialog;
 import android.content.DialogInterface;
@@ -47,8 +45,6 @@ import android.text.InputFilter;
 import android.widget.EditText;
 
 public class MainGameScreenActivity extends BaseGameActivity implements IOnMenuItemClickListener{
-
-	private static final int ROAD_ANIMATION_SPEED = 300;
 	// The camera width and height
 	private final static int CAMERA_WIDTH = 480;
 	private final static int CAMERA_HEIGHT = 800;
@@ -79,6 +75,11 @@ public class MainGameScreenActivity extends BaseGameActivity implements IOnMenuI
 	
 	// The number of mailbox in the screen
 	private static final int MAILBOX_COUNT = 4;
+
+	// The speed of the Road Animation
+	private static final int ROAD_ANIMATION_SPEED = 150;
+	
+	private static final int BURING_ANIMATION_SPEED = 300;
 	
 	// A reference to the game camera.
 	private Camera mCamera;
@@ -172,6 +173,12 @@ public class MainGameScreenActivity extends BaseGameActivity implements IOnMenuI
 
 	@Override
 	public void onLoadResources() {
+		// Initialize the handler
+		mHandler = new Handler();
+		
+		// Create an instance of controller
+		mController = new Controller(this);
+		
 		// Load the fonts that the activity will need.
 		FontFactory.setAssetBasePath("font/");
 		
@@ -334,74 +341,33 @@ public class MainGameScreenActivity extends BaseGameActivity implements IOnMenuI
 
 	@Override
 	public Scene onLoadScene() {
-		createGameScene();
 		mMainScene = new Scene(1);
-		mMainScene.setChildScene(mGameScene);	
-		
+		// Create the scenes needed by this activity and set game scene as the default scene
+		createGameScene();		
+		createAlertDialogs();
+		createGameOverMenuScene();
+		mMainScene.setChildScene(mGameScene);		
 		return mMainScene;
-	}
-
-	@Override
-	public void onLoadComplete() {
-	}
-
-
+	} // End of onLoadScene
 	
 	@Override
-	public void onBackPressed() {}
-	
-	private void dropTheTruck() {
-		mTruckSprite.registerEntityModifier(new MoveYModifier(mTruckSpeed, -mTruckSprite.getHeight(), CAMERA_HEIGHT));
-	}
+	public void onLoadComplete() {}
 
-	private void stopTheWorld() {
-		mRoadTiledSprite.stopAnimation();
-		mTruckTimer.cancel();
-		Iterator<MailBox> it = mMailBoxSprites.iterator();
-		while(it.hasNext()){
-			it.next().clearEntityModifiers();
-		}
-		mTruckSprite.clearEntityModifiers();
-	}
-	
-	@Override
-	public boolean onMenuItemClicked(MenuScene pMenuScene, IMenuItem pMenuItem,
-			float pMenuItemLocalX, float pMenuItemLocalY) {
-		switch (pMenuItem.getID()) {
-		case MENU_PLAY_AGAIN:
-			mMainScene.setChildScene(mGameScene);
-			resetGame();
-			return true;
-		case MENU_EXIT_TO_MAIN_MENU:
-			Intent myIntent = new Intent(MainGameScreenActivity.this,ControlScreenActivity.class);
-			MainGameScreenActivity.this.startActivity(myIntent);
-			mMainScene.clearChildScene();
-			mMainScene.clearTouchAreas();
-			mMainScene.clearUpdateHandlers();
-			mMainScene.clearEntityModifiers();
-			finish();
-			return true;
-		default:
-			return false;
-		}
-	}
-	
+	/**
+	 * Create the game scene. 
+	 * Initialize the game values, attach children sprites and register touch areas.
+	 */
 	private void createGameScene()
 	{
 		initializeGameVals();
-		mHandler = new Handler();
-		mHighScorerNameEditText = new EditText(this);
-		mHighScorerNameEditText.setHint("0 - 10 characters.");
-		mHighScorerNameEditText.setFilters(new InputFilter[] { new InputFilter.LengthFilter(10)});
 		
+		// Set the position of the hit text.
 		mHitText.setPosition((CAMERA_WIDTH/2)-(mHitText.getWidth()/2), 100);
-		
-		mController = new Controller(this);
-		createAlertDialogs();
-		createGameOverMenuScene();
 		
 		if(mGameScene == null){
 			mGameScene = new Scene(1);
+			
+			// Add all the game sprites.
 			mGameScene.getLastChild().attachChild(mRoadTiledSprite);
 			for(int i=0;i<MAILBOX_COUNT;i++)
 				mGameScene.getLastChild().attachChild(mMailBoxSprites.get(i));
@@ -415,120 +381,276 @@ public class MainGameScreenActivity extends BaseGameActivity implements IOnMenuI
 			mGameScene.getLastChild().attachChild(mHitText);			
 			mGameScene.registerTouchArea(mRoadTiledSprite);
 			
+			// Build the game timer.
 			buildTimer();
-		}
+		} // End of if
 		
+		// Register an update handler for the game scene
 		mGameScene.registerUpdateHandler(new IUpdateHandler() {
-
 			@Override
 			public void reset() {}
 			
 			@Override
 			public void onUpdate(float pSecondsElapsed) {
-				Runnable showScoreRunnable = new Runnable() {
-
+				// Create an anonymous inner class that shows the alert dialog if the score made it to the top 10.
+				// Otherwise, it will show the game over menu scene.
+				Runnable gameOverRunnable = new Runnable() {
 					@Override
 					public void run() {
+						// Update the game over's score text to the current score
 						mGameOverScoreText.setText("Score: "+mScoreCount);
+						
+						// If the score belongs to the top 10 and it is greater than zero, then set the message of the AlertDialog to
+						// the appropriate one showing the user his/her score and prompts him/her to enter his/her name.
 						if(mController.scoreBelongsToTop10(mScoreCount) && mScoreCount > 0){
-							mSaveHighScoreAlertDialog.setMessage(getDialogMessage());
+							mSaveHighScoreAlertDialog.setMessage("Congrats, your score made it to the top 10." +
+																 "\n Score: "+mScoreCount +
+																 "\n Enter your name:");
+							// Show the alert dialog
 							mSaveHighScoreAlertDialog.show();
 						}
 						else
-						{
+							// If the user didn't make it to the top 10, then just show the game over scene
 							mMainScene.setChildScene(mGameOverMenuScene);
-						}
-					}
-
-					private CharSequence getDialogMessage() {
-						return "Congrats, your score made it to the top 10." +
-								"\n Score: "+mScoreCount +
-								"\n Enter your name:";
-					}
-				};
+					} // End of run method
+				}; // End of Runnable anonymous inner class
+				
+				// If the strike count is 3 then stop the animations and run the gameOverRunnable
 				if(mStrikeCount == 3)
 				{
 					stopTheWorld();
-					mHandler.post(showScoreRunnable);
-				}
-				if(mTruckSprite.collidesWith(mCarTiledSprite) && mTruckSprite.getY() < CAMERA_HEIGHT-10){
-					if(mCarInRight == mTruckInRight)
-					{
-						stopTheWorld();
-						mTruckSprite.setPosition(-CAMERA_WIDTH, mTruckSprite.getY());
-						mTruckCrashedSprite.setPosition(mTruckPosition, mTruckSprite.getY());
-						mTruckCrashedSprite.animate(300);
-						mCarTiledSprite.setPosition(0, -mCarTiledSprite.getHeight());
-						mCarCrashedSprite.setPosition(mTruckPosition, CAR_YPOSITION);
-						mCarCrashedSprite.animate(300);
-						
-						float xCarOrigin = mCarCrashedSprite.getX();
+					mHandler.post(gameOverRunnable);
+				} // End of if
+				
+				// If the truck collides with the car, the truck is still in the screen, and they are in the same lane... 
+				if(mTruckSprite.collidesWith(mCarTiledSprite) && (mTruckSprite.getY() < CAMERA_HEIGHT-10) && mCarInRight == mTruckInRight){
+					// Stop all animations
+					stopTheWorld();
+					
+					// Remove the truck then replace it with the smashed up truck
+					mTruckSprite.setPosition(-CAMERA_WIDTH, mTruckSprite.getY());
+					mTruckCrashedSprite.setPosition(mTruckPosition, mTruckSprite.getY());
+					mTruckCrashedSprite.animate(BURING_ANIMATION_SPEED);
+					
+					// Remove the car then replace it with the smashed up car					
+					mCarTiledSprite.setPosition(0, -mCarTiledSprite.getHeight());
+					mCarCrashedSprite.setPosition(mTruckPosition, CAR_YPOSITION);
+					mCarCrashedSprite.animate(BURING_ANIMATION_SPEED);
+					
+					// Save the current car's x
+					float xCarOrigin = mCarCrashedSprite.getX();
 
-						float degCounter = 0;
-						float xPosCounter = 0;
-						while(mTruckCrashedSprite.collidesWith(mCarCrashedSprite))
+					// Initialize the degree and the xpos counter to 0
+					float degCounter = 0;
+					float xPosCounter = 0;
+					
+					// While the Truck and the car is colliding with each other.
+					while(mTruckCrashedSprite.collidesWith(mCarCrashedSprite))
+					{
+						// If the truck is on the left, add the xPos counter by 0.1 and rotate it counter clockwise by 1 degree.
+						if(mTruckPosition == TRUCK_LEFT_POSITION)
 						{
-							if(mTruckPosition == TRUCK_LEFT_POSITION)
-							{
-								xPosCounter+=0.1f;
-								degCounter--;
-							}
-							else
-							{
-								xPosCounter-=0.1f;
-								degCounter++;
-							}
-							mCarCrashedSprite.setRotation(degCounter);
-							mTruckCrashedSprite.setRotation(degCounter/3);
-							mCarCrashedSprite.setPosition(mCarCrashedSprite.getX()+xPosCounter, mCarCrashedSprite.getY());
+							xPosCounter+=0.1f;
+							degCounter--;
 						}
-						mTruckCrashedSprite.registerEntityModifier(new RotationModifier(3, 0, mTruckCrashedSprite.getRotation()+degCounter/3));
-						mCarCrashedSprite.registerEntityModifier(new RotationModifier(3, 0, mCarCrashedSprite.getRotation()+degCounter));
-						mCarCrashedSprite.registerEntityModifier(new MoveXModifier(3, xCarOrigin, mCarCrashedSprite.getX()+xPosCounter));
-						mHandler.postDelayed(showScoreRunnable,1500);
-					}
-				}
-			}
-		});
-	}
+						// If the truck is on the right, decrease the xPos counter by 0.1 and rotate it clockwise by 1 degree.
+						else
+						{
+							xPosCounter-=0.1f;
+							degCounter++;
+						} // End of if-else
+						
+						// Set the rotation of the carCrashed to the current degCounter
+						mCarCrashedSprite.setRotation(degCounter);
+						
+						// Set the rotation of the truchCrashed to the current degCounter/3 (The truck doesn't move as much as the car)
+						mTruckCrashedSprite.setRotation(degCounter/3);
+						mCarCrashedSprite.setPosition(mCarCrashedSprite.getX()+xPosCounter, mCarCrashedSprite.getY());
+					} // End of while
+					
+					// The steps above is just a way to figure out what is the right x and rotation values to add to the modifier.
+					// We use the values to rotate the truck and the car.
+					mTruckCrashedSprite.registerEntityModifier(new RotationModifier(1.5f, 0, mTruckCrashedSprite.getRotation()+degCounter/3));
+					mCarCrashedSprite.registerEntityModifier(new RotationModifier(1.5f, 0, mCarCrashedSprite.getRotation()+degCounter));
+					mCarCrashedSprite.registerEntityModifier(new MoveXModifier(1.5f, xCarOrigin, mCarCrashedSprite.getX()+xPosCounter));
+					
+					// We then call the gameOverRunnable after 1.5 seconds to show the game over screen
+					mHandler.postDelayed(gameOverRunnable,1500);
+				} // End of if
+			} // End of run method
+		}); // End of Runnable anonymous inner class
+	} // End of createGameScene method
+
+	/**
+	 * Create the alert dialog that shows the user that his/her score made it to the top 10.
+	 */
+	private void createAlertDialogs() {
+		// Get the AlertDialog Builder class and save it in a variable.
+		AlertDialog.Builder saveAlertDialogBuilder = new AlertDialog.Builder(this);
+		
+		// Create the edit text and show the hint. Also limit the user to 10 characters.
+		mHighScorerNameEditText = new EditText(this);
+		mHighScorerNameEditText.setHint("0 - 10 characters.");
+		mHighScorerNameEditText.setFilters(new InputFilter[] { new InputFilter.LengthFilter(10)});
+		
+		// Set the title of the AlertDialog to High Score:
+		saveAlertDialogBuilder.setTitle("High Score:");
+		
+		// Add the EditText as a view inside the AlertDialog
+		saveAlertDialogBuilder.setView(mHighScorerNameEditText);
+		
+		// Set the positive button to saveToDbAlertDialogClickListener and make the AlertDialog non cancelable
+		saveAlertDialogBuilder.setPositiveButton("Save", saveToDbAlertDialogClickListener);
+		saveAlertDialogBuilder.setCancelable(false);
+		
+		// Create the alert dialog and save it to the mSaveHighScoreAlertDialog field
+		mSaveHighScoreAlertDialog = saveAlertDialogBuilder.create();
+	} // End of createAlertDialogs method
+	
+	/**
+	 * Create the Menu Scene that is shown when the game is over.
+	 */
+	private void createGameOverMenuScene() {
+		this.mGameOverMenuScene = new MenuScene(this.mCamera);	
+		
+		// Add the sprites needed by the GameOverMenuScene
+		mGameOverMenuScene.getLastChild().attachChild(mRoadTiledSprite);	
+		mGameOverMenuScene.getLastChild().attachChild(mGameOverMenuSprite);
+		mGameOverMenuScene.getLastChild().attachChild(mGameOverScoreText);
+		
+		// Add the menu items
+		final IMenuItem playAgainMenuItem = new ColorMenuItemDecorator(
+				new TextMenuItem(MENU_PLAY_AGAIN, mFont, "Play again"), 0.5f, 0.5f, 0.5f, 1.0f, 1.0f, 1.0f);
+		playAgainMenuItem.setBlendFunction(GL10.GL_SRC_ALPHA, GL10.GL_ONE_MINUS_SRC_ALPHA);
+		this.mGameOverMenuScene.addMenuItem(playAgainMenuItem);
+	
+		final IMenuItem exitToMainMenuItem = new ColorMenuItemDecorator(
+				new TextMenuItem(MENU_EXIT_TO_MAIN_MENU, mFont, "Exit"), 0.5f, 0.5f, 0.5f, 1.0f, 1.0f, 1.0f);
+		exitToMainMenuItem.setBlendFunction(GL10.GL_SRC_ALPHA, GL10.GL_ONE_MINUS_SRC_ALPHA);
+		this.mGameOverMenuScene.addMenuItem(exitToMainMenuItem);	
+		
+		this.mGameOverMenuScene.buildAnimations();
+		this.mGameOverMenuScene.setBackgroundEnabled(false);
+		// Set this object as the handler of the MenuItemClick.
+		this.mGameOverMenuScene.setOnMenuItemClickListener(this);
+	} // End of createGameOverMenuScene
+	
+	@Override
+	public boolean onMenuItemClicked(MenuScene pMenuScene, IMenuItem pMenuItem,
+			float pMenuItemLocalX, float pMenuItemLocalY) {
+		// Check which menu item is selected and perform actions based on that selection.
+		switch (pMenuItem.getID()) {
+		case MENU_PLAY_AGAIN:
+			// Set the child scene to the game scene
+			mMainScene.setChildScene(mGameScene);
+			// Reset the game to its initial state
+			resetGame();
+			return true;
+		case MENU_EXIT_TO_MAIN_MENU:
+			// Leave and close the current activity and remove all the items in the main scene that may be rebuilt when back
+			// To this activity.			
+			Intent myIntent = new Intent(MainGameScreenActivity.this,ControlScreenActivity.class);
+			MainGameScreenActivity.this.startActivity(myIntent);
+			mMainScene.clearChildScene();
+			mMainScene.clearTouchAreas();
+			mMainScene.clearUpdateHandlers();
+			mMainScene.clearEntityModifiers();
+			finish();
+			return true;
+		default:
+			return false;
+		}
+	} // End of onMenuItemClicked
+	
+	@Override
+	public void onBackPressed() {}
+	
+	/**
+	 * Drop the truck by using the move y modifier
+	 */
+	private void dropTheTruck() {
+		mTruckSprite.registerEntityModifier(new MoveYModifier(mTruckSpeed, -mTruckSprite.getHeight(), CAMERA_HEIGHT));
+	} // End of dropTheTruck method
+
+	/**
+	 * Stops the animation of all the sprites in the road.
+	 */
+	private void stopTheWorld() {
+		// Stop the animation of the road
+		mRoadTiledSprite.stopAnimation();
+		
+		// Cancel the timer
+		mTruckTimer.cancel();
+		
+		// Clear all the modifiers for each mailbox.
+		Iterator<MailBox> it = mMailBoxSprites.iterator();
+		while(it.hasNext())
+			it.next().clearEntityModifiers();
+		
+		// Clear the modifier of the golden mailbox
+		mGoldenMailbox.clearEntityModifiers();
+		
+		// Clear the modifier for the truck
+		mTruckSprite.clearEntityModifiers();
+	} // End of stopTheWorld method
+
+	/**
+	 * Reset the game into its initial states.
+	 */
+	private void resetGame() {
+		// Re initialize the game values.
+		initializeGameVals();
+		
+		// Clear all the modifiers of the sprites.
+		mCarTiledSprite.clearEntityModifiers();
+		mCarCrashedSprite.clearEntityModifiers();
+		mTruckSprite.clearEntityModifiers();
+		mTruckCrashedSprite.clearEntityModifiers();
+		
+		// Set all sprites to their initial positions.
+		mCarTiledSprite.setInitialPosition();
+		mTruckSprite.setInitialPosition();
+		Iterator<MailBox> it = mMailBoxSprites.iterator();
+		for(int i=0;i<MAILBOX_COUNT;i++)
+		{
+			MailBox tempMailbox = it.next();
+			tempMailbox.setPosition(0,-(tempMailbox.getHeight()+100));
+		} // End of for
+		mGoldenMailbox.setPosition(0, -(mGoldenMailbox.getHeight()));			
+		mTruckCrashedSprite.setPosition(0,-(mTruckCrashedSprite.getHeight()+100));
+		mCarCrashedSprite.setPosition(0, -(mCarCrashedSprite.getHeight()+100));
+
+		// Reanimate the road
+		mRoadTiledSprite.animate(300);
+		
+		// Rebuild the timer
+		buildTimer();
+	} // End of resetGame method
+	
+	/**
+	 * Initialize the game values.
+	 */
 	private void initializeGameVals() {
+		// Set the car to right.
 		mCarInRight = true;
 		// If the player did not use a cheat code, reset the score.
 		if(!mCheated)
 		{
 			mScoreCount = 0;
 			mScoreKeeper.setText("Score: "+mScoreCount);
-		}
+		} // End of if
+		
+		// Set the truck speed, mailbox speed, and strike count to their default values.
 		mTruckSpeed = 5;
 		mMailboxSpeed = 4;
 		mStrikeCount = 0;
-		mStrikeKeeper.setText("Strikes: "+mStrikeCount);
-		mHitText.setVisible(false);
-	}
-
-	private void resetGame() {
-		initializeGameVals();
-		mCarTiledSprite.clearEntityModifiers();
-		mCarCrashedSprite.clearEntityModifiers();
-		mTruckSprite.clearEntityModifiers();
-		mTruckCrashedSprite.clearEntityModifiers();
-		mCarTiledSprite.setInitialPosition();
-		mTruckSprite.setInitialPosition();
-
-		Iterator<MailBox> it = mMailBoxSprites.iterator();
-		for(int i=0;i<MAILBOX_COUNT;i++)
-		{
-			MailBox tempMailbox = it.next();
-			tempMailbox.setPosition(0,-(tempMailbox.getHeight()+100));
-		}
-			
-		mTruckCrashedSprite.setPosition(0,-(mTruckCrashedSprite.getHeight()+100));
-		mCarCrashedSprite.setPosition(0, -(mCarCrashedSprite.getHeight()+100));
-
-		mRoadTiledSprite.animate(300);
 		
-		buildTimer();
-	}
+		// Update the strike count text
+		mStrikeKeeper.setText("Strikes: "+mStrikeCount);
+		
+		// Make the hit text invisible
+		mHitText.setVisible(false);
+	} // End of initializeGameVals method
 
 	private void buildTimer() {		
 		mTruckTimer = new Timer();
@@ -570,18 +692,6 @@ public class MainGameScreenActivity extends BaseGameActivity implements IOnMenuI
 		};
 		mTruckTimer.schedule(mTruckTimerTask, (long)0, (long)1000);
 	}
-
-
-	private void createAlertDialogs() {
-		// Get the AlertDialog Builder class and save it in a variable.
-		AlertDialog.Builder saveAlertDialogBuilder = new AlertDialog.Builder(this);
-		saveAlertDialogBuilder.setTitle("High Score:");
-		saveAlertDialogBuilder.setView(mHighScorerNameEditText);
-		saveAlertDialogBuilder.setPositiveButton("Save", saveToDbAlertDialogClickListener);
-		saveAlertDialogBuilder.setCancelable(false);
-		
-		mSaveHighScoreAlertDialog = saveAlertDialogBuilder.create();
-	}	
 	
 	
 	
@@ -612,37 +722,15 @@ public class MainGameScreenActivity extends BaseGameActivity implements IOnMenuI
 		} // End of onClick method
 	}; // End of alertDialogResetOnClickListener anonymous inner class
 
-	private void createGameOverMenuScene() {
-		this.mGameOverMenuScene = new MenuScene(this.mCamera);		
-		mGameOverMenuScene.getLastChild().attachChild(mGameOverMenuSprite);
-		mGameOverMenuScene.getLastChild().attachChild(mGameOverScoreText);
-		final IMenuItem playAgainMenuItem = new ColorMenuItemDecorator(
-				new TextMenuItem(MENU_PLAY_AGAIN, mFont, "Play again"), 0.5f, 0.5f, 0.5f, 1.0f, 1.0f, 1.0f);
-		playAgainMenuItem.setBlendFunction(GL10.GL_SRC_ALPHA, GL10.GL_ONE_MINUS_SRC_ALPHA);
-		this.mGameOverMenuScene.addMenuItem(playAgainMenuItem);
-	
-		final IMenuItem exitToMainMenuItem = new ColorMenuItemDecorator(
-				new TextMenuItem(MENU_EXIT_TO_MAIN_MENU, mFont, "Exit"), 0.5f, 0.5f, 0.5f, 1.0f, 1.0f, 1.0f);
-		exitToMainMenuItem.setBlendFunction(GL10.GL_SRC_ALPHA, GL10.GL_ONE_MINUS_SRC_ALPHA);
-		this.mGameOverMenuScene.addMenuItem(exitToMainMenuItem);	
-	
-		this.mGameOverMenuScene.buildAnimations();
-		this.mGameOverMenuScene.setBackgroundEnabled(false);
-		this.mGameOverMenuScene.setOnMenuItemClickListener(this);
-		this.mGameOverMenuScene.setPosition(mGameOverMenuScene.getInitialX(), mGameOverMenuScene.getInitialY() + 70);
-	}
-
 	private class MailBox extends TiledSprite
 	{		
 		protected static final float MAILBOX_HIT_AREA_MIN = CAR_YPOSITION+50;
 		protected static final float MAILBOX_HIT_AREA_MAX = CAMERA_HEIGHT-100;
 		private boolean isEmpty;
 		private boolean isHit;
-		private Handler mHandler;
 
 		public MailBox(TiledTextureRegion pTiledTextureRegion) {
 			super(-pTiledTextureRegion.getWidth(), -pTiledTextureRegion.getHeight(), pTiledTextureRegion);
-			this.mHandler = new Handler();
 		}
 		
 		public void checkGotHit() {
@@ -736,7 +824,7 @@ public class MainGameScreenActivity extends BaseGameActivity implements IOnMenuI
 		private void startHomeRunAnimation() {
 			this.registerEntityModifier(new MoveXModifier(2, this.getX(), (getX()==MAILBOX_LEFT_POS)?-this.getWidth():CAMERA_WIDTH));
 			this.registerEntityModifier(new MoveYModifier(2, this.getY(), -this.getHeight()));
-			this.registerEntityModifier(new RotationModifier(4, this.getRotation(), 360));
+			this.registerEntityModifier(new RotationModifier(4, this.getRotation(), 450));
 		}
 
 		@Override
