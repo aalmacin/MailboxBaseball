@@ -232,7 +232,10 @@ public class MainGameScreenActivity extends BaseGameActivity implements IOnMenuI
 		case MENU_EXIT_TO_MAIN_MENU:
 			Intent myIntent = new Intent(MainGameScreenActivity.this,ControlScreenActivity.class);
 			MainGameScreenActivity.this.startActivity(myIntent);
-			mMainScene.detachChildren();
+			mMainScene.clearChildScene();
+			mMainScene.clearTouchAreas();
+			mMainScene.clearUpdateHandlers();
+			mMainScene.clearEntityModifiers();
 			finish();
 			return true;
 		default:

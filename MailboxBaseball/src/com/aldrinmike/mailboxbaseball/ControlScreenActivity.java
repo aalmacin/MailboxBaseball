@@ -173,9 +173,15 @@ public class ControlScreenActivity extends BaseGameActivity  implements IOnMenuI
 		return this.mMainScene;
 	} // End of onLoadScene method
 
+	/**
+	 * Create the Main menu's screen. Put all the menu items in the right position.
+	 */
 	private void createMainMenuScreen() {		
 		mMainMenuScene = new MenuScene(this.mCamera);
+		// Add the background sprite.
 		mMainMenuScene.getLastChild().attachChild(mBackgroundSprite);
+		
+		// Create and add the menus.
 		final IMenuItem startMenuItem = new ColorMenuItemDecorator(
 				new TextMenuItem(MENU_START, mFont, "Start"), 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
 		startMenuItem.setBlendFunction(GL10.GL_SRC_ALPHA, GL10.GL_ONE_MINUS_SRC_ALPHA);
@@ -199,30 +205,33 @@ public class ControlScreenActivity extends BaseGameActivity  implements IOnMenuI
 		mMainMenuScene.buildAnimations();
 		mMainMenuScene.setBackgroundEnabled(false);
 		mMainMenuScene.setOnMenuItemClickListener(this);
+		
+		// Position the menus
 		startMenuItem.setPosition(startMenuItem.getX(), (CAMERA_HEIGHT/2)-18);
 		helpMenuItem.setPosition(helpMenuItem.getX(), startMenuItem.getY() + MENU_MARGIN);
 		highScoreMenuItem.setPosition(highScoreMenuItem.getX(), helpMenuItem.getY() + MENU_MARGIN);
 		exitMenuItem.setPosition(exitMenuItem.getX(), highScoreMenuItem.getY() + MENU_MARGIN);
-//		this.mMainMenuScene.setPosition(mMainMenuScene.getInitialX(), mMainMenuScene.getInitialY() + 90);
-	}
+	} // End of createMainMenuScreen method
 
+	/**
+	 * Create the help Screen.
+	 */
 	private void createHelpScreen() {
-		if(mHelpScene == null){
-			mHelpScene = new Scene(1);
-			mHelpScene.getLastChild().attachChild(mHelpScreenSprite);
-			mHelpScene.getLastChild().attachChild(mBackButtonSprite);
-		}
-	}
+		mHelpScene = new Scene(1);
+		// Add the background and the back button
+		mHelpScene.getLastChild().attachChild(mHelpScreenSprite);
+		mHelpScene.getLastChild().attachChild(mBackButtonSprite);
+	} // End of createHelpScreen method
 	
+	/**
+	 * Create the High score Screen.
+	 */
 	private void createHighScoreScreen() {
-		if(mHighScoreScene == null){
-			mHighScoreScene = new HighScoreScene(1);
-		}
-	}
+		mHighScoreScene = new HighScoreScene(1);
+	} // End of createHighScoreScreen method
 	
 	@Override
-	public void onLoadComplete() {
-	}
+	public void onLoadComplete() {}
 
 	@Override
 	public void onBackPressed() {}
@@ -230,72 +239,112 @@ public class ControlScreenActivity extends BaseGameActivity  implements IOnMenuI
 	@Override
 	public boolean onMenuItemClicked(MenuScene pMenuScene, IMenuItem pMenuItem,
 			float pMenuItemLocalX, float pMenuItemLocalY) {
+		// Check which menu item is selected and perform actions based on that selection.
 		switch (pMenuItem.getID()) {
-		case MENU_START:		
+		case MENU_START:
+			// Leave and close the current activity and remove all the items in the main scene that may be rebuilt when back
+			// To this activity.
 			Intent myIntent = new Intent(ControlScreenActivity.this,MainGameScreenActivity.class);
 			ControlScreenActivity.this.startActivity(myIntent);
-			mMainScene.detachChildren();
+			mMainScene.clearChildScene();
+			mMainScene.clearTouchAreas();
+			mMainScene.clearUpdateHandlers();
+			mMainScene.clearEntityModifiers();
 			finish();
 			return true;
 		case MENU_HELP:
+			// Set the childScene to Help
 			this.mMainScene.setChildScene(mHelpScene);
 			return true;
 		case MENU_HIGHSCORES:
+			// Update the texts in the High Score and set it as the main's child scene
 			mHighScoreScene.updateTexts();
 			this.mMainScene.setChildScene(mHighScoreScene);
 			return true;
 		case MENU_EXIT:
+			// Close this activity
 			this.finish();
 			return true;
 		default:
 			return false;
-		}
-	}
-
+		} // End of switch
+	} // End of createHighScoreScreen method
+	
+	/** 
+	 * @author Aldrin Jerome Almacin
+	 *         <p>
+	 *         <b>Date: </b>December 8, 2012
+	 *         </p>
+	 *         <p>
+	 *         <b>Description: </b>HighScoreScene is a scene that inserts the player names and scores into the screen
+	 *         via ChangeableText objects. All the data taken were from the database.
+	 *         </p>
+	 * 
+	 */
 	private class HighScoreScene extends Scene
 	{
-		private static final int HIGH_SCORE_X = 300;
-
+		// Empty string used by the changeable texts. In order to cheat the text's max length, we gave an enormous amount of blank spaces.
 		private static final String EMPTY_CHANGEABLE_INITIAL = "" +
 				"                                                             " +
 				"                                                             ";
-		
+
+		// The corresponding positions of the player names and scores.
 		private static final int PLAYER_NAME_X = 70;
 		private static final int PLAYER_NAME_Y = 200;
+		private static final int HIGH_SCORE_X = 300;
 		
+		// The controller that is used to take data from the database.
 		private Controller mController;
-		private ArrayList<ArrayList<String>> top10Players;
-		private ChangeableText mTextLeft;
-		private ChangeableText mTextRight;
+		
+		// Changeable texts used to display data
+		private ChangeableText mPlayerNames;
+		private ChangeableText mPlayerScores;
+		
+		/**
+		 * 
+		 * @param pLayerCount the number of players
+		 */
 		public HighScoreScene(int pLayerCount) {
 			super(pLayerCount);
-			mTextLeft = new ChangeableText(PLAYER_NAME_X, PLAYER_NAME_Y, mHighScoreFont, EMPTY_CHANGEABLE_INITIAL);
-			mTextRight = new ChangeableText(HIGH_SCORE_X, PLAYER_NAME_Y, mHighScoreFont,EMPTY_CHANGEABLE_INITIAL);
+			// Create an instance of the objects needed.
+			mPlayerNames = new ChangeableText(PLAYER_NAME_X, PLAYER_NAME_Y, mHighScoreFont, EMPTY_CHANGEABLE_INITIAL);
+			mPlayerScores = new ChangeableText(HIGH_SCORE_X, PLAYER_NAME_Y, mHighScoreFont,EMPTY_CHANGEABLE_INITIAL);
 			mController = new Controller(mContext);
+			
+			// Add the sprites that needed to be shown in the screen
 			this.getLastChild().attachChild(mHighScoreSceneSprite);
 			this.getLastChild().attachChild(mBackButtonSprite);
-			this.getLastChild().attachChild(mTextLeft);
-			this.getLastChild().attachChild(mTextRight);
+			this.getLastChild().attachChild(mPlayerNames);
+			this.getLastChild().attachChild(mPlayerScores);
+			
+			// Update the texts in the ChangeableTexts
 			updateTexts();
-		}
+		} // End of Constructor
 
+		/**
+		 * Updates the texts in the player and score ChangeableText objects.
+		 * All the data were taken from the database.
+		 */
 		private void updateTexts() {
-			top10Players = mController.getTop10Scores();
+			// Take the top 10 scores in the database and store it in the top 10 players arraylist
+			ArrayList<ArrayList<String>> top10Players = mController.getTop10Scores();
 			if(top10Players == null)
-				mTextLeft.setText("No scores to \ndisplay yet.");
+				// If the top 10 players is empty, then tell the user that there are no scores to display yet.
+				mPlayerNames.setText("No scores to \ndisplay yet.");
 			else
 			{
+				// The players and scores String stores all the player and scores.
 				String players = "Name\n";
 				String scores = "Score\n";
+				
+				// Each player and score is concatenated in the players and scores String.
 				for(int i = 0;i<top10Players.size();i++){
 					players += (top10Players.get(i).get(0)+"\n");
 					scores += (top10Players.get(i).get(1)+"\n");
-				}
-				mTextLeft.setText(players);
-				mTextRight.setText(scores);
-			}
-		}
-		
-	}
-	
-}
+				} // End of for
+				mPlayerNames.setText(players);
+				mPlayerScores.setText(scores);
+			} // End of if-else
+		} // End of updateTexts method
+	} // End of HighScoreScene method	
+} // End of ControlScreenActivity class
