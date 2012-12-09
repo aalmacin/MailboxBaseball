@@ -48,10 +48,12 @@ import android.widget.EditText;
 
 public class MainGameScreenActivity extends BaseGameActivity implements IOnMenuItemClickListener{
 
+	private static final int ROAD_ANIMATION_SPEED = 300;
 	// The camera width and height
 	private final static int CAMERA_WIDTH = 480;
 	private final static int CAMERA_HEIGHT = 800;
 	
+	// The cheat code used if the user wants infinite life.
 	private static final String CHEAT_CODE = "SIAKOL";
 
 	// Car positions.
@@ -90,7 +92,10 @@ public class MainGameScreenActivity extends BaseGameActivity implements IOnMenuI
 	// The font used by the text that tells the user when an item is hit.
 	private Font mHitTextFont;
 	
+	// The parent scene that holds the game and game over scenes
 	private Scene mMainScene;
+	
+	// The game scene and the game over scene
 	private Scene mGameScene;
 	private MenuScene mGameOverMenuScene;
 	
@@ -101,64 +106,190 @@ public class MainGameScreenActivity extends BaseGameActivity implements IOnMenuI
 	private ArrayList<MailBox> mMailBoxSprites;
 	private GoldenMailbox mGoldenMailbox;
 
+	// The car sprites in the game. One that is not destroyed which has the players and
+	// one that is smashed up after hitting the truck
 	private TiledSprite mCarTiledSprite;
 	private AnimatedSprite mCarCrashedSprite;
-	
+
+	// The truck sprites in the game. One that is not destroyed and
+	// one that is on fire
 	private Sprite mTruckSprite;
 	private AnimatedSprite mTruckCrashedSprite;
 	
+	// The Sprite that shows the box that contains the scores and menu items
 	private Sprite mGameOverMenuSprite;
 	
+	// Timer and timer task used to count how many seconds elapsed since the game started.
 	private Timer mTruckTimer;
 	private TimerTask mTruckTimerTask;	
 	
+	// The handler that calls the Runnables that are to be called when needed
 	private Handler mHandler;
 	
+	// The controller that accesses data from the database.
 	private Controller mController;
 
+	// The score and strike counts
 	private int mScoreCount;
 	private int mStrikeCount;
+	
+	// The position of the truck in the road
 	private int mTruckPosition;
+	
+	// The speed of the truck and the mailbox
 	private float mTruckSpeed;
 	private float mMailboxSpeed;
+	
+	// States whether the truck/car is on the right
 	private boolean mTruckInRight;
 	private boolean mCarInRight;
+
+	// States whether the player cheated
+	private boolean mCheated;
 	
+	// EditText that is in the AlertDialog that is used to get the player's name.
 	private EditText mHighScorerNameEditText;
 
-	private ChangeableText mStrikeKeeper;
+	// ChangeableText that shows the user the current count of strike and score
 	private ChangeableText mScoreKeeper;
+	private ChangeableText mStrikeKeeper;
+	
+	// ChangeableText that shows the score when the game is over.
 	private ChangeableText mGameOverScoreText;
+
+	// ChangeableText that shows the user that the mail box is hit.
 	private ChangeableText mHitText;
 	
+	// Alert dialog that asks for the player's name after .
 	private AlertDialog mSaveHighScoreAlertDialog;
-	private boolean mCheated;
 
 	@Override
 	public Engine onLoadEngine() {
 		this.mCamera = new Camera(0, 0, CAMERA_WIDTH, CAMERA_HEIGHT);
 		return new Engine(new EngineOptions(true, ScreenOrientation.PORTRAIT, 
 				new RatioResolutionPolicy(CAMERA_WIDTH,CAMERA_HEIGHT), this.mCamera));
-	}
+	} // End of onLoadEngine method
 
 	@Override
 	public void onLoadResources() {
-
+		// Load the fonts that the activity will need.
 		FontFactory.setAssetBasePath("font/");
+		
+		Texture mFontTexture = new Texture(256, 256,TextureOptions.BILINEAR_PREMULTIPLYALPHA);
+		mFont = FontFactory.createFromAsset(mFontTexture, this, "kulminoituva.ttf", 38, true, Color.BLACK);
+		mEngine.getTextureManager().loadTexture(mFontTexture);
+		mEngine.getFontManager().loadFont(mFont);
+		
 		Texture mScoreFontTexture = new Texture(256, 256,TextureOptions.BILINEAR_PREMULTIPLYALPHA);
 		mScoreFont = FontFactory.createFromAsset(mScoreFontTexture, this, "FLORLRG_.ttf", 20, true, Color.BLACK);
 		mEngine.getTextureManager().loadTexture(mScoreFontTexture);
 		mEngine.getFontManager().loadFont(mScoreFont);
 
 		Texture mHitTextFontTexture = new Texture(256, 256,TextureOptions.BILINEAR_PREMULTIPLYALPHA);
-		this.mHitTextFont = FontFactory.createFromAsset(mHitTextFontTexture, this, "Magenta_BBT.ttf", 68, true, Color.YELLOW);
-		this.mEngine.getTextureManager().loadTexture(mHitTextFontTexture);
-		this.mEngine.getFontManager().loadFont(this.mHitTextFont);
+		mHitTextFont = FontFactory.createFromAsset(mHitTextFontTexture, this, "Magenta_BBT.ttf", 68, true, Color.YELLOW);
+		mEngine.getTextureManager().loadTexture(mHitTextFontTexture);
+		mEngine.getFontManager().loadFont(mHitTextFont);
 		
-		Texture mFontTexture = new Texture(256, 256,TextureOptions.BILINEAR_PREMULTIPLYALPHA);
-		this.mFont = FontFactory.createFromAsset(mFontTexture, this, "kulminoituva.ttf", 38, true, Color.BLACK);
-		this.mEngine.getTextureManager().loadTexture(mFontTexture);
-		this.mEngine.getFontManager().loadFont(this.mFont);
+		// Load the road texture
+		Texture mRoadTiledTexture = new Texture(2048, 2048, TextureOptions.BILINEAR_PREMULTIPLYALPHA);
+		TiledTextureRegion mRoadTiledTextureRegion = TextureRegionFactory.createTiledFromAsset(mRoadTiledTexture, this, "gfx/gameScreen.png", 
+				0, 0, 3, 1);
+		mEngine.getTextureManager().loadTexture(mRoadTiledTexture);
+		
+		// Create an anonymous inner class of AnimatedSprite
+		mRoadTiledSprite = new AnimatedSprite(0, 0, mRoadTiledTextureRegion) {	
+			// The index in the tile in which the batter will hit.	
+			private static final int LEFT_BATTER_HIT = 1;		
+			private static final int RIGHT_BATTER_HIT = 2;			
+			
+			// The index of the image in normal.
+			private static final int NORMAL_IMAGE_INDEX = 0;
+			
+			// The time it takes before the car is back to normal.
+			private static final int MILLIS_TO_NORMAL = 100;
+			
+			@Override
+			public boolean onAreaTouched(TouchEvent pSceneTouchEvent,
+					float pTouchAreaLocalX, float pTouchAreaLocalY) {
+				if(pTouchAreaLocalX <= CAMERA_WIDTH/2)
+				{
+					// If the user touched on the left part of the screen then
+					// Move the car to the left if the car is on the right.
+					// If it is already on the left, make the left batter hit the bat.
+					if(mCarInRight)
+						mCarTiledSprite.setPosition(CAR_LEFT_POSITION, mCarTiledSprite.getY());
+					else
+						hitBat(LEFT_BATTER_HIT);
+					// Car is now not in right so set the state to false.
+					mCarInRight = false;
+				}
+				else
+				{
+					// If the user touched on the right part of the screen then
+					// Move the car to the right if the car is on the left.
+					// If it is already on the right, make the right batter hit the bat.
+					if(!mCarInRight)
+						mCarTiledSprite.setPosition(CAR_RIGHT_POSITION, mCarTiledSprite.getY());
+					else
+						hitBat(RIGHT_BATTER_HIT);
+					// Car is now not in left so set the state to true.
+					mCarInRight = true;
+				} // End of if-else
+				return super
+						.onAreaTouched(pSceneTouchEvent, pTouchAreaLocalX, pTouchAreaLocalY);
+			} // End of onAreaTouched method
+			
+			/**
+			 * Makes the batter hit the bat then sets the image back to normal after some time.
+			 * 
+			 * @param tiledImageIndex The tile index of the tiled image to be shown.
+			 */
+			private void hitBat(int tiledImageIndex) {
+				Runnable carBackToNormalRunnable = new Runnable() {
+					@Override
+					public void run() {
+						mCarTiledSprite.setCurrentTileIndex(NORMAL_IMAGE_INDEX);
+					} // End of run method
+				}; // End of carBackToNormalRunnable anonymous inner class
+				
+				// Set the current tile to the passed index.
+				mCarTiledSprite.setCurrentTileIndex(tiledImageIndex);
+				
+				// Check each mailbox if any of them got hit.
+				for(int i=0;i<MAILBOX_COUNT;i++)
+					mMailBoxSprites.get(i).checkGotHit();
+				
+				// Check if the golden mailbox got hit.
+				mGoldenMailbox.checkGotHit();
+				
+				// Set the text and strike count to the current count.
+				mScoreKeeper.setText("Score: "+mScoreCount);
+				mStrikeKeeper.setText("Strikes: "+mStrikeCount);
+				
+				// Put the car back to normal after the delay
+				mHandler.postDelayed(carBackToNormalRunnable, MILLIS_TO_NORMAL);
+			} // End of hitBat method
+		}; // End of AnimatedSprite anonymous inner class
+		
+		// Animate the road so that it looks like the car is travelling.
+		mRoadTiledSprite.animate(ROAD_ANIMATION_SPEED);
+		
+		// Create the mailboxes and add them to the mailbox arraylist.
+		mMailBoxSprites = new ArrayList<MailBox>();
+		for(int i = 0; i<MAILBOX_COUNT;i++){			
+			Texture mMailBoxTiledTexture = new Texture(1024, 1024, TextureOptions.BILINEAR_PREMULTIPLYALPHA);
+			TiledTextureRegion mMailBoxTiledTextureRegion = TextureRegionFactory.createTiledFromAsset(mMailBoxTiledTexture, this, "gfx/mailbox.png", 
+					0, 0, 8, 1);
+			mEngine.getTextureManager().loadTexture(mMailBoxTiledTexture);
+			mMailBoxSprites.add(new MailBox(mMailBoxTiledTextureRegion));
+		} // End of for
+		
+		// Load and create the golden mailbox
+		Texture mGoldenMailBoxTiledTexture = new Texture(1024, 1024, TextureOptions.BILINEAR_PREMULTIPLYALPHA);
+		TiledTextureRegion mGoldenMailBoxTiledTextureRegion = TextureRegionFactory.createTiledFromAsset(mGoldenMailBoxTiledTexture, this, "gfx/goldenMailbox.png", 
+				0, 0, 2, 1);
+		mEngine.getTextureManager().loadTexture(mGoldenMailBoxTiledTexture);
+		mGoldenMailbox = new GoldenMailbox(mGoldenMailBoxTiledTextureRegion);
 
 		Texture mGameOverMenuTexture = new Texture(1024,1024,TextureOptions.BILINEAR_PREMULTIPLYALPHA);
 		TextureRegion mGameOverMenuTextureRegion = TextureRegionFactory.createFromAsset(mGameOverMenuTexture, this, "gfx/gameOverMenu.png", 0, 0);
@@ -167,131 +298,47 @@ public class MainGameScreenActivity extends BaseGameActivity implements IOnMenuI
 		mGameOverMenuSprite = new Sprite(CAMERA_WIDTH-mGameOverMenuTextureRegion.getWidth(),
 				CAMERA_HEIGHT-mGameOverMenuTextureRegion.getHeight(),mGameOverMenuTextureRegion);
 		
+		// Load the textures and create the car sprites. Both crashed and normal
 		Texture mCarTiledTexture = new Texture(1024, 1024, TextureOptions.BILINEAR_PREMULTIPLYALPHA);
 		TiledTextureRegion mCarTiledTextureRegion = TextureRegionFactory.createTiledFromAsset(mCarTiledTexture, this, "gfx/carTile.png", 
 				0, 0, 3, 1);
-		mEngine.getTextureManager().loadTexture(mCarTiledTexture);
-		
+		mEngine.getTextureManager().loadTexture(mCarTiledTexture);		
 		mCarTiledSprite = new TiledSprite(CAR_RIGHT_POSITION, CAR_YPOSITION, mCarTiledTextureRegion);
-		
-		mMailBoxSprites = new ArrayList<MailBox>();
-		for(int i = 0; i<MAILBOX_COUNT;i++){			
-			Texture mMailBoxTiledTexture = new Texture(1024, 1024, TextureOptions.BILINEAR_PREMULTIPLYALPHA);
-			TiledTextureRegion mMailBoxTiledTextureRegion = TextureRegionFactory.createTiledFromAsset(mMailBoxTiledTexture, this, "gfx/mailbox.png", 
-					0, 0, 8, 1);
-			mEngine.getTextureManager().loadTexture(mMailBoxTiledTexture);
-			mMailBoxSprites.add(new MailBox(mMailBoxTiledTextureRegion));
-		}
-		Texture mRoadTiledTexture = new Texture(2048, 2048, TextureOptions.BILINEAR_PREMULTIPLYALPHA);
-		TiledTextureRegion mRoadTiledTextureRegion = TextureRegionFactory.createTiledFromAsset(mRoadTiledTexture, this, "gfx/gameScreen.png", 
-				0, 0, 3, 1);
-		mEngine.getTextureManager().loadTexture(mRoadTiledTexture);
-		
-		mRoadTiledSprite = new AnimatedSprite(0, 0, mRoadTiledTextureRegion){
-
-			
-			
-			@Override
-			public boolean onAreaTouched(TouchEvent pSceneTouchEvent,
-					float pTouchAreaLocalX, float pTouchAreaLocalY) {
-				if(pTouchAreaLocalX < CAMERA_WIDTH/2)
-				{
-					if(mCarInRight)
-					{
-						mCarTiledSprite.setCurrentTileIndex(0);
-						mCarTiledSprite.setPosition(CAR_LEFT_POSITION, mCarTiledSprite.getY());
-					}
-					else
-					{
-						mCarTiledSprite.setCurrentTileIndex(1);
-						hitBat();					
-					}
-					mCarInRight = false;
-				}
-				else
-				{
-					if(!mCarInRight)
-					{
-						mCarTiledSprite.setCurrentTileIndex(0);
-						mCarTiledSprite.setPosition(CAR_RIGHT_POSITION, mCarTiledSprite.getY());
-					}
-					else
-					{
-						mCarTiledSprite.setCurrentTileIndex(2);
-						hitBat();
-					}
-					mCarInRight = true;
-				}
-				return super
-						.onAreaTouched(pSceneTouchEvent, pTouchAreaLocalX, pTouchAreaLocalY);
-			}
-			
-
-
-			private void hitBat() {
-				Runnable carBackToNormalRunnable = new Runnable() {
-					
-					@Override
-					public void run() {
-						mCarTiledSprite.setCurrentTileIndex(0);
-					}
-				};
-				for(int i=0;i<MAILBOX_COUNT;i++)
-				{
-					mMailBoxSprites.get(i).checkGotHit();
-				}
-				mGoldenMailbox.checkGotHit();
-				mScoreKeeper.setText("Score: "+mScoreCount);
-				mStrikeKeeper.setText("Strikes: "+mStrikeCount);
-				mHandler.postDelayed(carBackToNormalRunnable, 100);
-			}
-		};
-		mRoadTiledSprite.animate(300);
-
-		Texture mTruckTexture = new Texture(1024,1024,TextureOptions.BILINEAR_PREMULTIPLYALPHA);
-		TextureRegion mTruckTextureRegion = TextureRegionFactory.createFromAsset(mTruckTexture, this, "gfx/truck.png", 0,0);
-		mEngine.getTextureManager().loadTexture(mTruckTexture);
-
-		Texture mTruckCrashedTexture = new Texture(1024,1024,TextureOptions.BILINEAR_PREMULTIPLYALPHA);
-		TiledTextureRegion mTruckCrashedTextureRegion = TextureRegionFactory.createTiledFromAsset(mTruckCrashedTexture, this, "gfx/truckCrashed.png", 
-				0, 0, 2, 1);
-		mEngine.getTextureManager().loadTexture(mTruckCrashedTexture);
-		
-		mTruckCrashedSprite = new AnimatedSprite(0, 0, mTruckCrashedTextureRegion);		
-		mTruckCrashedSprite.setPosition(0,-mTruckCrashedSprite.getHeight());
 
 		Texture mCarCrashedTexture = new Texture(512,512,TextureOptions.BILINEAR_PREMULTIPLYALPHA);
 		TiledTextureRegion mCarCrashedTextureRegion = TextureRegionFactory.createTiledFromAsset(mCarCrashedTexture, this, "gfx/carCrashed.png", 
 				0, 0, 2, 1);
-		mEngine.getTextureManager().loadTexture(mCarCrashedTexture);
-		
+		mEngine.getTextureManager().loadTexture(mCarCrashedTexture);		
 		mCarCrashedSprite = new AnimatedSprite(0, 0, mCarCrashedTextureRegion);
 		mCarCrashedSprite.setPosition(0, -mCarCrashedSprite.getHeight());
-		
-		mTruckSprite = new Sprite(-CAMERA_WIDTH,-CAMERA_HEIGHT,mTruckTextureRegion);		
-		
-		mScoreKeeper = new ChangeableText(5, 5, mScoreFont, "Score: 0     ");
-		mStrikeKeeper = new ChangeableText(mScoreKeeper.getX(), mScoreKeeper.getY()+mScoreKeeper.getHeight()+15, mScoreFont, "Strikes: 0     ");
-		
-		mGameOverScoreText = new ChangeableText(SCORE_AND_HIT_TEXT_X, SCORE_AND_HIT_TEXT_Y, mFont, "Score: NONENONENONE");
-		
-		Texture mGoldenMailBoxTiledTexture = new Texture(1024, 1024, TextureOptions.BILINEAR_PREMULTIPLYALPHA);
-		TiledTextureRegion mGoldenMailBoxTiledTextureRegion = TextureRegionFactory.createTiledFromAsset(mGoldenMailBoxTiledTexture, this, "gfx/goldenMailbox.png", 
+
+		// Load the textures and create the truck sprites. Both crashed and normal
+		Texture mTruckTexture = new Texture(1024,1024,TextureOptions.BILINEAR_PREMULTIPLYALPHA);
+		TextureRegion mTruckTextureRegion = TextureRegionFactory.createFromAsset(mTruckTexture, this, "gfx/truck.png", 0,0);
+		mEngine.getTextureManager().loadTexture(mTruckTexture);		
+		mTruckSprite = new Sprite(-CAMERA_WIDTH,-CAMERA_HEIGHT,mTruckTextureRegion);	
+
+		Texture mTruckCrashedTexture = new Texture(1024,1024,TextureOptions.BILINEAR_PREMULTIPLYALPHA);
+		TiledTextureRegion mTruckCrashedTextureRegion = TextureRegionFactory.createTiledFromAsset(mTruckCrashedTexture, this, "gfx/truckCrashed.png", 
 				0, 0, 2, 1);
-		mEngine.getTextureManager().loadTexture(mGoldenMailBoxTiledTexture);
-		mGoldenMailbox = new GoldenMailbox(mGoldenMailBoxTiledTextureRegion);
+		mEngine.getTextureManager().loadTexture(mTruckCrashedTexture);		
+		mTruckCrashedSprite = new AnimatedSprite(0, 0, mTruckCrashedTextureRegion);		
+		mTruckCrashedSprite.setPosition(0,-mTruckCrashedSprite.getHeight());	
 		
+		// Create and initialize all the Changeable texts to their default values.
+		mScoreKeeper = new ChangeableText(5, 5, mScoreFont, "Score: 0     ");
+		mStrikeKeeper = new ChangeableText(mScoreKeeper.getX(), mScoreKeeper.getY()+mScoreKeeper.getHeight()+15, mScoreFont, "Strikes: 0     ");		
+		mGameOverScoreText = new ChangeableText(SCORE_AND_HIT_TEXT_X, SCORE_AND_HIT_TEXT_Y, mFont, "Score: NONENONENONE");		
 		mHitText = new ChangeableText(SCORE_AND_HIT_TEXT_X, SCORE_AND_HIT_TEXT_Y, mHitTextFont, "12345678");
-	}
+	} // End of onLoadResources
 
 	@Override
 	public Scene onLoadScene() {
-		this.createGameScene();
-		this.mMainScene = new Scene(1);
-		mMainScene.getLastChild().attachChild(mRoadTiledSprite);
+		createGameScene();
+		mMainScene = new Scene(1);
 		mMainScene.setChildScene(mGameScene);	
 		
-		return this.mMainScene;
+		return mMainScene;
 	}
 
 	@Override
@@ -451,11 +498,11 @@ public class MainGameScreenActivity extends BaseGameActivity implements IOnMenuI
 		{
 			mScoreCount = 0;
 			mScoreKeeper.setText("Score: "+mScoreCount);
-			mStrikeKeeper.setText("Strikes: "+mStrikeCount);
 		}
 		mTruckSpeed = 5;
 		mMailboxSpeed = 4;
 		mStrikeCount = 0;
+		mStrikeKeeper.setText("Strikes: "+mStrikeCount);
 		mHitText.setVisible(false);
 	}
 
