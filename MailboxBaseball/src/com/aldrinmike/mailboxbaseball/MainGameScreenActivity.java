@@ -955,6 +955,7 @@ public class MainGameScreenActivity extends BaseGameActivity implements IOnMenuI
 			// Randomly set the mailbox's position
 			boolean isOnLeft = (!mTruckInRight)?true:false;
 			this.setPosition((isOnLeft)?MAILBOX_LEFT_POS:MAILBOX_RIGHT_POS, -this.getHeight());
+			this.setRotation(0);
 			
 			// Set the appropriate image index base on the position
 			if(isOnLeft)
