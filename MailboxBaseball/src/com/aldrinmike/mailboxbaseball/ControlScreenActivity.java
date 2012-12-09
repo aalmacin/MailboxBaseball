@@ -32,138 +32,171 @@ import org.anddev.andengine.ui.activity.BaseGameActivity;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
-
+/**
+ * FileName: ControlScreenActivity.java
+ * 
+ * @author Aldrin Jerome Almacin
+ *         <p>
+ *         <b>Date: </b>December 8, 2012
+ *         </p>
+ *         <p>
+ *         <b>Description: </b>ControlScreenActivity is the activity that shows a set of menu items that can be clicked to send the user to different screens.
+ *			</p>
+ *			<p>
+ *         <b>Menu Items:</b>
+ *         <ul>
+ *         	<li>Start - Starts the game.</li>
+ *         	<li>Help - Shows how the game is played.</li>
+ *         	<li>High Scores - Shows the top 10 scores.</li>
+ *         	<li>Exit - Closes the game.</li>
+ *         </ul>
+ *         </p>
+ * 
+ */
 public class ControlScreenActivity extends BaseGameActivity  implements IOnMenuItemClickListener{
 
+	// The camera width and height
 	private final static int CAMERA_WIDTH = 480;
 	private final static int CAMERA_HEIGHT = 800;
 	
+	// The ids of the menu items
 	private final static int MENU_START = 0;
 	private final static int MENU_HELP = 1;
 	private final static int MENU_HIGHSCORES = 2;
 	private final static int MENU_EXIT = 3;
+	
+	// The x position of the back button
 	private static final float BACK_BUTTON_X = 20;
 	
+	// A reference to the game camera.
 	private Camera mCamera;
+	
+	// The font used by the menu items.
 	private Font mFont;
 	
-	private Scene mMainScene;
-	private Scene mHelpScene;
-	private HighScoreScene mHighScoreScene;
-	private MenuScene mStaticMenuScene;
+	// The font used by the top 10 scores.
+	private Font mHighScoreFont;
 	
+	// The scenes that the activity uses.
+	private Scene mMainScene;	// Parent of all the other scenes.
+	private Scene mHelpScene;	// Shows the sprite with the instructions.
+	private HighScoreScene mHighScoreScene;	// Shows the high scores.
+	private MenuScene mMainMenuScene;	// Shows the main game menus.	
 	
+	// All the sprites that are shown in each activity
 	private Sprite mBackgroundSprite;	
 	private Sprite mHelpScreenSprite;
-	private Sprite mBackButtonSprite;
 	private Sprite mHighScoreSceneSprite;
 	
-	public Context mContext;
-	private Font mHighScoreFont;
+	private Sprite mBackButtonSprite; // The back button
+	
+	public Context mContext; // A reference to this Activity's context
 	
 	@Override
 	public Engine onLoadEngine() {
 		this.mCamera = new Camera(0, 0, CAMERA_WIDTH, CAMERA_HEIGHT);
 		return new Engine(new EngineOptions(true, ScreenOrientation.PORTRAIT, 
 				new RatioResolutionPolicy(CAMERA_WIDTH,CAMERA_HEIGHT), this.mCamera));
-	}
+	} // End of onLoadEngine
 
 	@Override
-	public void onLoadResources() {
-		
-		
+	public void onLoadResources() {		
 		mContext = this;
-		Texture mFontTexture = new Texture(256, 256,TextureOptions.BILINEAR_PREMULTIPLYALPHA);
-		Texture mHighScoreFontTexture = new Texture(256, 256,TextureOptions.BILINEAR_PREMULTIPLYALPHA); 
+		
+		// Load the fonts that the activity will need.
 		FontFactory.setAssetBasePath("font/");
-		this.mFont = FontFactory.createFromAsset(mFontTexture, this, "kulminoituva.ttf", 48, true, Color.BLACK);
-		this.mEngine.getTextureManager().loadTexture(mFontTexture);
-		this.mEngine.getFontManager().loadFont(this.mFont);	
 		
-		this.mHighScoreFont = FontFactory.createFromAsset(mHighScoreFontTexture, this, "kulminoituva.ttf", 38, true, Color.BLACK);
-		this.mEngine.getTextureManager().loadTexture(mHighScoreFontTexture);
-		this.mEngine.getFontManager().loadFont(this.mHighScoreFont);	
+		Texture mFontTexture = new Texture(256, 256,TextureOptions.BILINEAR_PREMULTIPLYALPHA);
+		mFont = FontFactory.createFromAsset(mFontTexture, this, "kulminoituva.ttf", 48, true, Color.BLACK);
+		mEngine.getTextureManager().loadTexture(mFontTexture);
+		mEngine.getFontManager().loadFont(this.mFont);	
+
+		Texture mHighScoreFontTexture = new Texture(256, 256,TextureOptions.BILINEAR_PREMULTIPLYALPHA); 
+		mHighScoreFont = FontFactory.createFromAsset(mHighScoreFontTexture, this, "kulminoituva.ttf", 38, true, Color.BLACK);
+		mEngine.getTextureManager().loadTexture(mHighScoreFontTexture);
+		mEngine.getFontManager().loadFont(this.mHighScoreFont);	
 		
+		// Load the textures and create the main screen's background sprite.
 		Texture mBackgroundTexture = new Texture(1024,1024,TextureOptions.BILINEAR_PREMULTIPLYALPHA);
 		TextureRegion mBackgroundTextureRegion = TextureRegionFactory.createFromAsset(mBackgroundTexture, this, "gfx/background.png", 0, 0);
-		mEngine.getTextureManager().loadTexture(mBackgroundTexture);	
-		
+		mEngine.getTextureManager().loadTexture(mBackgroundTexture);			
 		mBackgroundSprite = new Sprite(CAMERA_WIDTH-mBackgroundTextureRegion.getWidth(),
 				CAMERA_HEIGHT-mBackgroundTextureRegion.getHeight(),mBackgroundTextureRegion);		
 
+		// Load the textures and create the help screen's background sprite.
 		Texture mHelpScreenTexture = new Texture(1024,1024,TextureOptions.BILINEAR_PREMULTIPLYALPHA);
 		TextureRegion mHelpScreenTextureRegion = TextureRegionFactory.createFromAsset(mHelpScreenTexture, this, "gfx/helpScreen.png", 0, 0);
 		mEngine.getTextureManager().loadTexture(mHelpScreenTexture);
-
 		mHelpScreenSprite = new Sprite(CAMERA_WIDTH-mHelpScreenTextureRegion.getWidth(),
 				CAMERA_WIDTH-mHelpScreenTextureRegion.getWidth(),mHelpScreenTextureRegion);
-		
+
+		// Load the textures and create the high score screen's background sprite.
 		Texture mHighScoreTexture = new Texture(1024,1024,TextureOptions.BILINEAR_PREMULTIPLYALPHA);
 		TextureRegion mHighScoreTextureRegion = TextureRegionFactory.createFromAsset(mHighScoreTexture, this, "gfx/highScore.png", 0, 0);
-		mEngine.getTextureManager().loadTexture(mHighScoreTexture);
-		
+		mEngine.getTextureManager().loadTexture(mHighScoreTexture);		
 		mHighScoreSceneSprite = new Sprite(CAMERA_WIDTH-mHighScoreTextureRegion.getWidth(),
 				CAMERA_WIDTH-mHighScoreTextureRegion.getWidth(),mHighScoreTextureRegion);
 
+		// Load the textures and create the back button sprite that is used to go back to the main menu. 
 		Texture mBackButtonTexture = new Texture(1024,1024,TextureOptions.BILINEAR_PREMULTIPLYALPHA);
 		TextureRegion mBackButtonTextureRegion = TextureRegionFactory.createFromAsset(mBackButtonTexture, this, "gfx/backButton.png", 0,0);
-		mEngine.getTextureManager().loadTexture(mBackButtonTexture);
-		
+		mEngine.getTextureManager().loadTexture(mBackButtonTexture);	
+		// When the back button is touched, send the user back to the main manu.
 		mBackButtonSprite = new Sprite(BACK_BUTTON_X,CAMERA_HEIGHT-90,mBackButtonTextureRegion){			
 			@Override
 			public boolean onAreaTouched(TouchEvent pSceneTouchEvent,
 					float pTouchAreaLocalX, float pTouchAreaLocalY) {
-					mMainScene.getLastChild().attachChild(mBackgroundSprite);
-					mMainScene.setChildScene(mStaticMenuScene);
+					mMainScene.setChildScene(mMainMenuScene);
 				
 				return super
 						.onAreaTouched(pSceneTouchEvent, pTouchAreaLocalX, pTouchAreaLocalY);
-			}
-		};		
-	}
+			} // End of onAreaTouched method
+		}; // End of Sprite anonymous inner class
+	} // End of onLoadResources method
 	
 	@Override
 	public Scene onLoadScene() {
-
-
 		this.mEngine.registerUpdateHandler(new FPSLogger());
-		this.createStaticMenuScene();
-		this.createHelpScreen();
-		this.createHighScoreScreen();
-		this.mMainScene = new Scene(1);
-		mMainScene.getLastChild().attachChild(mBackgroundSprite);
-		mMainScene.setChildScene(mStaticMenuScene);	
-		mMainScene.registerTouchArea(mBackButtonSprite);	
+		// Create the screens to be shown to the user.
+		createMainMenuScreen();
+		createHelpScreen();
+		createHighScoreScreen();
 		
+		// Create the main scene and set the main menu to be the default scene
+		// Then register a touch area of the main scene
+		mMainScene = new Scene(1);
+		mMainScene.setChildScene(mMainMenuScene);	
+		mMainScene.registerTouchArea(mBackButtonSprite);			
 		return this.mMainScene;
-	}
+	} // End of onLoadScene method
 
-	private void createStaticMenuScene() {		
-		this.mStaticMenuScene = new MenuScene(this.mCamera);
+	private void createMainMenuScreen() {		
+		mMainMenuScene = new MenuScene(this.mCamera);
+		mMainMenuScene.getLastChild().attachChild(mBackgroundSprite);
 		final IMenuItem startMenuItem = new ColorMenuItemDecorator(
 				new TextMenuItem(MENU_START, mFont, "Start"), 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
 		startMenuItem.setBlendFunction(GL10.GL_SRC_ALPHA, GL10.GL_ONE_MINUS_SRC_ALPHA);
-		this.mStaticMenuScene.addMenuItem(startMenuItem);
+		this.mMainMenuScene.addMenuItem(startMenuItem);
 		
 		final IMenuItem helpMenuItem = new ColorMenuItemDecorator(
 				new TextMenuItem(MENU_HELP, mFont, "Help"), 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
 		helpMenuItem.setBlendFunction(GL10.GL_SRC_ALPHA, GL10.GL_ONE_MINUS_SRC_ALPHA);
-		this.mStaticMenuScene.addMenuItem(helpMenuItem);
+		this.mMainMenuScene.addMenuItem(helpMenuItem);
 		
 		final IMenuItem highScoreMenuItem = new ColorMenuItemDecorator(
 				new TextMenuItem(MENU_HIGHSCORES, mFont, "High Scores"), 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
 		highScoreMenuItem.setBlendFunction(GL10.GL_SRC_ALPHA, GL10.GL_ONE_MINUS_SRC_ALPHA);
-		this.mStaticMenuScene.addMenuItem(highScoreMenuItem);
+		this.mMainMenuScene.addMenuItem(highScoreMenuItem);
 		
 		final IMenuItem exitMenuItem = new ColorMenuItemDecorator(
 				new TextMenuItem(MENU_EXIT, mFont, "Exit"), 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
 		exitMenuItem.setBlendFunction(GL10.GL_SRC_ALPHA, GL10.GL_ONE_MINUS_SRC_ALPHA);
-		this.mStaticMenuScene.addMenuItem(exitMenuItem);		
+		this.mMainMenuScene.addMenuItem(exitMenuItem);		
 		
-		this.mStaticMenuScene.buildAnimations();
-		this.mStaticMenuScene.setBackgroundEnabled(false);
-		this.mStaticMenuScene.setOnMenuItemClickListener(this);
-		this.mStaticMenuScene.setPosition(mStaticMenuScene.getInitialX(), mStaticMenuScene.getInitialY() + 90);
+		this.mMainMenuScene.buildAnimations();
+		this.mMainMenuScene.setBackgroundEnabled(false);
+		this.mMainMenuScene.setOnMenuItemClickListener(this);
+		this.mMainMenuScene.setPosition(mMainMenuScene.getInitialX(), mMainMenuScene.getInitialY() + 90);
 	}
 
 	private void createHelpScreen() {
@@ -214,18 +247,23 @@ public class ControlScreenActivity extends BaseGameActivity  implements IOnMenuI
 
 	private class HighScoreScene extends Scene
 	{
+		private static final int HIGH_SCORE_X = 300;
+
+		private static final String EMPTY_CHANGEABLE_INITIAL = "Empty text" +
+				"                                                             " +
+				"                                                             ";
+		
+		private static final int PLAYER_NAME_X = 70;
+		private static final int PLAYER_NAME_Y = 200;
+		
 		private Controller mController;
 		private ArrayList<ArrayList<String>> top10Players;
 		private ChangeableText mTextLeft;
 		private ChangeableText mTextRight;
 		public HighScoreScene(int pLayerCount) {
 			super(pLayerCount);
-			mTextLeft = new ChangeableText(70, 200, mHighScoreFont, "Empty text" +
-					"                                                             " +
-					"                                                             ");
-			mTextRight = new ChangeableText(300, 200, mHighScoreFont, 
-					"                                                             " +
-					"                                                             ");
+			mTextLeft = new ChangeableText(PLAYER_NAME_X, PLAYER_NAME_Y, mHighScoreFont, EMPTY_CHANGEABLE_INITIAL);
+			mTextRight = new ChangeableText(HIGH_SCORE_X, PLAYER_NAME_Y, mHighScoreFont,EMPTY_CHANGEABLE_INITIAL);
 			mController = new Controller(mContext);
 			this.getLastChild().attachChild(mHighScoreSceneSprite);
 			this.getLastChild().attachChild(mBackButtonSprite);

@@ -631,7 +631,6 @@ public class MainGameScreenActivity extends BaseGameActivity implements IOnMenuI
 			{
 				mHitText.setText("HOMERUN!");
 				mScore+=10;
-//				this.setCurrentTileIndex(2);
 				this.clearEntityModifiers();
 				startHomeRunAnimation();
 				mHitText.setVisible(true);

@@ -1,7 +1,6 @@
 package com.aldrinmike.mailboxbaseball;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 
 import android.content.ContentValues;
 import android.content.Context;
@@ -9,9 +8,6 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.database.sqlite.SQLiteDatabase.CursorFactory;
-import android.widget.EditText;
-import android.widget.TableLayout;
-import android.widget.TextView;
 
 /**
  * FileName: Controller.java
