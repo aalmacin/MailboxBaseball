@@ -756,10 +756,10 @@ public class MainGameScreenActivity extends BaseGameActivity implements IOnMenuI
 	private class MailBox extends TiledSprite
 	{	
 		// The indexes of the mailboxes
-		private static final int LEFT_MAILBOX_NOT_EMPTY = 0;
-		private static final int LEFT_MAILBOX_EMPTY = 1;
-		private static final int RIGHT_MAILBOX_NOT_EMPTY = 2;
-		private static final int RIGHT_MAILBOX_EMPTY = 3;
+		private static final int LEFT_MAILBOX_EMPTY = 0;
+		private static final int LEFT_MAILBOX_NOT_EMPTY = 1;
+		private static final int RIGHT_MAILBOX_EMPTY = 2;
+		private static final int RIGHT_MAILBOX_NOT_EMPTY = 3;
 		
 		// The limit on where the mailbox can be directly hitted by the batter.
 		protected static final float MAILBOX_HIT_AREA_MIN = CAR_YPOSITION+50;
